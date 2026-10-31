@@ -1,0 +1,3075 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Jan & Ritas Jass-Revier</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+      --app-height: 100dvh;
+      --card-face: #fbf8f0;
+      --card-face-2: #f2ebd9;
+    }
+
+    html, body {
+      height: 100%;
+      height: var(--app-height);
+    }
+
+    body {
+      font-family: 'Plus+Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #06110a;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .felt-theme {
+      background: radial-gradient(circle at 50% 30%, #154526 0%, #06150c 100%);
+    }
+
+    .dark-theme {
+      background: radial-gradient(circle at 50% 20%, #172033 0%, #070a10 100%);
+    }
+
+    .apple-glass {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .apple-panel {
+      background: rgba(2, 6, 23, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .jass-teppich {
+      background: #0f3d22;
+      background-image: 
+        radial-gradient(ellipse at center, rgba(31, 107, 58, 0.95) 0%, rgba(9, 36, 19, 0.98) 100%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 0, transparent 8px);
+      border: 2.5px solid #d97706;
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.75), 0 15px 35px rgba(0, 0, 0, 0.6);
+      transition: all 0.7s cubic-bezier(0.34, 1.25, 0.64, 1);
+    }
+
+    .prep-box {
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .prep-box.collapsed {
+      opacity: 0;
+      transform: scale(0.4);
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .card-ratio {
+      aspect-ratio: 57 / 89 !important;
+    }
+
+    .jass-card {
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+      transform-origin: center bottom;
+      cursor: pointer;
+      background: linear-gradient(165deg, var(--card-face) 0%, var(--card-face-2) 100%);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+      border-radius: 6% / 4%;
+    }
+
+    .jass-card:hover {
+      transform: translateY(-16px) scale(1.06);
+      z-index: 35;
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.55);
+    }
+
+    .jass-card.selected-for-swap {
+      transform: translateY(-20px) scale(1.06) !important;
+      box-shadow: 0 0 0 2.5px #f59e0b, 0 16px 30px rgba(245, 158, 11, 0.5) !important;
+      z-index: 40;
+    }
+
+    .jass-card.weis-highlight {
+      transform: translateY(-12px) scale(1.04) !important;
+      box-shadow: 0 0 0 2.5px #38bdf8, 0 12px 24px rgba(56, 189, 248, 0.6) !important;
+      z-index: 30;
+    }
+
+    .jass-card.is-trump {
+      box-shadow: 0 0 0 2px #ffd60a, 0 4px 12px rgba(255, 214, 10, 0.35);
+    }
+
+    .shake-anim {
+      animation: card-shake 0.35s ease-in-out;
+    }
+    @keyframes card-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px) rotate(-3deg); }
+      75% { transform: translateX(6px) rotate(3deg); }
+    }
+
+    .card-back-swiss {
+      background-color: #b91c1c;
+      background-image: 
+        radial-gradient(#ffffff 18%, transparent 19%), 
+        radial-gradient(#ffffff 18%, transparent 19%);
+      background-size: 14px 14px;
+      background-position: 0 0, 7px 7px;
+      border: 2px solid #f8fafc;
+      border-radius: 6% / 4%;
+    }
+
+    .deck-switch-anim {
+      animation: flip-card 0.3s ease-out;
+    }
+    @keyframes flip-card {
+      0% { transform: scale(0.95) rotateY(40deg); opacity: 0.7; }
+      100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 6px; }
+  </style>
+</head>
+<body class="felt-theme text-white flex flex-col justify-between overflow-hidden">
+
+  <!-- ========================================== -->
+  <!-- 1. LOGIN & START-MODAL                     -->
+  <!-- ========================================== -->
+  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl">
+    <div class="apple-glass max-w-md w-full rounded-3xl p-5 sm:p-7 shadow-2xl text-center max-h-[92dvh] overflow-y-auto">
+      
+      <!-- LOGO -->
+      <div class="w-16 h-16 mx-auto mb-2.5 relative flex items-center justify-center">
+        <div class="absolute inset-0 rounded-3xl bg-amber-500/20 blur-xl"></div>
+        <svg viewBox="0 0 100 100" class="w-16 h-16 relative drop-shadow-2xl">
+          <defs>
+            <linearGradient id="logoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#14532d"/>
+              <stop offset="50%" stop-color="#0f2e1b"/>
+              <stop offset="100%" stop-color="#05140b"/>
+            </linearGradient>
+            <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fde047"/>
+              <stop offset="50%" stop-color="#d97706"/>
+              <stop offset="100%" stop-color="#b45309"/>
+            </linearGradient>
+          </defs>
+          <rect x="6" y="6" width="88" height="88" rx="24" fill="url(#logoBg)" stroke="url(#goldRim)" stroke-width="3"/>
+          <g transform="translate(18, 16) rotate(-10)">
+            <rect x="0" y="0" width="34" height="52" rx="4" fill="#b91c1c" stroke="#ffffff" stroke-width="1.5"/>
+            <circle cx="17" cy="26" r="8" fill="#ffffff" opacity="0.2"/>
+          </g>
+          <g transform="translate(48, 20) rotate(12)">
+            <rect x="0" y="0" width="34" height="52" rx="4" fill="#f7f1e1" stroke="#f59e0b" stroke-width="1.8"/>
+            <text x="6" y="14" font-size="11" font-weight="900" fill="#dc2626">A</text>
+            <text x="17" y="34" font-size="20" text-anchor="middle" fill="#dc2626">♥</text>
+          </g>
+          <g transform="translate(50, 72)">
+            <circle cx="0" cy="0" r="13" fill="#dc2626" stroke="#ffffff" stroke-width="1.8"/>
+            <rect x="-2" y="-7" width="4" height="14" fill="#ffffff" rx="1"/>
+            <rect x="-7" y="-2" width="14" height="4" fill="#ffffff" rx="1"/>
+          </g>
+        </svg>
+      </div>
+
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight mb-0.5 text-white">Jan &amp; Ritas Jass-Revier</h1>
+      <p class="text-xs text-slate-300 mb-4 sm:mb-5">Schweizer Zweier-Jass | Kreuzlingen 🇨🇭 ⇄ Berlin 🇩🇪</p>
+
+      <div class="mb-4 sm:mb-5 text-left">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-[11px] uppercase tracking-wider text-slate-400 font-bold">Wer bist du?</label>
+          <button onclick="openProfileModal()" class="text-xs text-amber-300 hover:text-amber-200 font-bold flex items-center gap-1 transition-colors">
+            ✏️ Profil anpassen
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="selectUser('Jan')" id="btn-user-jan" class="p-2.5 sm:p-3 rounded-2xl border-2 border-amber-400 bg-amber-500/20 text-left transition-all flex items-center gap-2.5">
+            <span id="login-avatar-jan" class="text-3xl">👱‍♂️</span>
+            <div class="overflow-hidden">
+              <div id="login-name-jan" class="font-bold text-white text-sm sm:text-base truncate">Jan</div>
+              <div id="login-loc-jan" class="text-[10px] sm:text-[11px] text-amber-300 truncate">Kreuzlingen 🇨🇭</div>
+            </div>
+          </button>
+
+          <button type="button" onclick="selectUser('Rita')" id="btn-user-rita" class="p-2.5 sm:p-3 rounded-2xl border-2 border-white/10 bg-white/5 hover:bg-white/10 text-left transition-all flex items-center gap-2.5">
+            <span id="login-avatar-rita" class="text-3xl">👩</span>
+            <div class="overflow-hidden">
+              <div id="login-name-rita" class="font-bold text-white text-sm sm:text-base truncate">Rita</div>
+              <div id="login-loc-rita" class="text-[10px] sm:text-[11px] text-slate-400 truncate">Berlin 🇩🇪</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="text-left">
+        <label class="block text-[11px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">Spielmodus</label>
+        <div class="space-y-2">
+          <button onclick="startGameMode('bot')" class="w-full py-2.5 sm:py-3 px-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs sm:text-sm text-left flex items-center justify-between transition-all">
+            <span class="flex items-center gap-2.5">
+              <span class="text-lg">🤖</span>
+              <span id="btn-bot-label">Gegen schlauen Rita-Bot üben</span>
+            </span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">Sofort</span>
+          </button>
+
+          <button onclick="showOnlineLobby()" class="w-full py-2.5 sm:py-3 px-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 font-black text-xs sm:text-sm text-slate-950 flex items-center justify-between shadow-xl transition-all">
+            <span class="flex items-center gap-2.5">
+              <span class="text-lg">🌐</span>
+              <span id="btn-online-text">Mit Rita online spielen</span>
+            </span>
+            <span class="text-[10px] bg-black/20 text-slate-950 px-2 py-0.5 rounded-full font-bold">Online</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="online-lobby-panel" class="hidden mt-4 pt-3.5 border-t border-white/10 text-left">
+        <div class="p-3 rounded-2xl apple-panel mb-2.5">
+          <h3 class="text-[11px] font-bold text-amber-300 uppercase mb-1">Option A: Raum öffnen</h3>
+          <p class="text-[10px] text-slate-300 mb-1.5">Code an die Spielpartnerin senden:</p>
+          <div class="flex gap-1.5">
+            <input type="text" id="my-peer-id" readonly placeholder="Wird geladen..." class="flex-1 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1 text-xs font-mono font-bold text-amber-300 select-all outline-none">
+            <button onclick="copyMyCode()" class="px-3 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs">Kopieren</button>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl apple-panel">
+          <h3 class="text-[11px] font-bold text-emerald-300 uppercase mb-1">Option B: Raum beitreten</h3>
+          <div class="flex gap-1.5">
+            <input type="text" id="remote-peer-input" placeholder="Partner-Code einfügen" class="flex-1 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1 text-xs font-mono font-bold text-white uppercase outline-none">
+            <button onclick="joinRoom()" class="px-3.5 py-1 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs">Verbinden</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. HAUPTSPIELFELD                          -->
+  <!-- ========================================== -->
+  <header class="w-full px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between apple-glass z-20 shadow-md shrink-0">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <button onclick="openLoginScreen()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center font-bold text-sm" title="Menü">
+        ⚙️
+      </button>
+      <div>
+        <h2 class="text-xs sm:text-sm font-bold leading-tight flex items-center gap-1.5">
+          <span>Jan &amp; Ritas Jass-Revier</span>
+          <span id="network-pill" class="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">Bot</span>
+        </h2>
+        <div id="dealer-info-pill" class="text-[10px] text-amber-300/90 font-semibold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <span id="header-dealer-txt">Jan gibt aus</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUNKTESTAND -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5 apple-panel px-2.5 sm:px-3 py-1 rounded-2xl">
+      <button id="btn-toggle-blind" onclick="toggleScoreVisibility()" class="px-1.5 py-0.5 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-bold flex items-center gap-1" title="Punktestand verbergen">
+        <span id="blind-icon">👁️</span>
+        <span id="blind-label" class="hidden sm:inline">Offen</span>
+      </button>
+
+      <div class="h-3.5 w-[1px] bg-white/15"></div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 text-xs font-bold">
+        <span class="text-emerald-400"><span id="lbl-me">Jan</span>: <b id="score-me" class="text-white text-sm">0</b> <span class="score-unit">Pkt</span></span>
+        <span class="text-slate-500">|</span>
+        <span class="text-amber-400"><span id="lbl-opp">Rita</span>: <b id="score-opp" class="text-white text-sm">0</b> <span class="score-unit">Pkt</span></span>
+      </div>
+    </div>
+
+    <!-- RECHTE TOOLS -->
+    <div class="flex items-center gap-1">
+      <button onclick="toggleNamingVariant()" id="btn-naming-toggle" class="px-2 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-[11px] font-bold border border-white/10" title="Schweizer oder Deutsche Begriffe">
+        🇨🇭 CH
+      </button>
+      <button onclick="toggleDeckType()" id="btn-deck-toggle" class="px-2 sm:px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold border border-white/10 flex items-center gap-1">
+        <span id="deck-icon">🌰</span> <span id="deck-label" class="hidden sm:inline">Deutsch</span>
+      </button>
+      <button onclick="openProfileModal()" class="px-2 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold border border-white/10" title="Profil">
+        👤
+      </button>
+    </div>
+  </header>
+
+  <!-- SPIELTISCH: VOLLKOMMEN MITTIG PLATZIERT -->
+  <main class="flex-1 w-full max-w-5xl mx-auto p-1 sm:p-2 flex flex-col justify-between items-center relative overflow-hidden">
+
+    <!-- GEGNER (OBEN, WÄHREND DES SPIELS SEHR DEZENT) -->
+    <div class="flex flex-col items-center gap-0.5 shrink-0 w-full">
+      <div id="opp-player-hud" class="flex items-center gap-2 px-3 py-0.5 rounded-full apple-panel text-[11px] shadow transition-all">
+        <span id="opp-avatar" class="text-sm">👩</span>
+        <span id="opp-name" class="font-bold">Rita</span>
+        <span id="opp-location-tag" class="text-[9px] text-slate-400 bg-white/10 px-1.5 py-0.2 rounded-full">Berlin 🇩🇪</span>
+        
+        <span id="opp-turn-indicator" class="hidden px-2 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[9px] animate-pulse">Am Zug</span>
+        <span id="opp-ready-indicator" class="hidden px-2 py-0.2 rounded-full bg-emerald-400 text-slate-950 font-bold text-[9px]">Bereit ✓</span>
+
+        <span class="text-slate-400">Karten: <b id="opp-card-count" class="text-white">12</b></span>
+
+        <div class="flex items-center gap-1 border-l border-white/15 pl-1.5">
+          <div id="opp-pile-graphic" class="flex items-center -space-x-1.5"></div>
+          <span id="opp-stiche-status" class="text-slate-300 text-[10px] font-semibold">0 Stiche</span>
+        </div>
+
+        <span id="opp-weis-badge" class="hidden px-1.5 py-0.2 rounded-md bg-sky-500/20 text-sky-300 text-[9px] border border-sky-400/30">Weis: +0</span>
+      </div>
+      <div id="opp-cards-row" class="flex justify-center -space-x-5 sm:-space-x-7 h-14 sm:h-18 overflow-hidden py-0.5 w-full max-w-md"></div>
+    </div>
+
+    <!-- TISCH-MITTE: PERFEKT MITTIG IM BILDFELD -->
+    <div class="my-auto w-full flex flex-col items-center justify-center relative">
+      
+      <!-- DEZENTER TRUMPF- & ZIEL-INDIKATOR NEBEN/OBERHALB DES TEPPICHS -->
+      <div id="discreet-trump-pill" class="hidden self-end mb-1 mr-4 sm:mr-8 px-3 py-0.5 rounded-full apple-glass border border-white/10 flex items-center gap-2 text-xs shadow-lg animate-fade-in">
+        <div class="flex items-center gap-1.5 font-bold">
+          <span class="text-slate-400 text-[9px] uppercase font-semibold">Trumpf</span>
+          <span id="hud-trump-icon" class="w-3.5 h-3.5 inline-block"></span>
+          <span id="hud-trump-name" class="text-amber-300 text-[11px]">Eichel</span>
+        </div>
+        <div class="h-3 w-[1px] bg-white/20"></div>
+        <div class="flex items-center gap-1 font-bold">
+          <span class="text-slate-400 text-[9px] uppercase font-semibold">Ziel</span>
+          <span id="hud-mode-value" class="text-amber-300 font-black text-xs sm:text-sm">50</span>
+        </div>
+      </div>
+
+      <div id="table-stage" class="py-1.5 sm:py-2.5 px-2 sm:px-4 w-full max-w-xl mx-auto rounded-3xl apple-panel shadow-2xl flex items-center justify-between relative overflow-hidden transition-all duration-700">
+
+        <!-- TRUMPF- & MODUS-STAPEL (LINKS IN TAUSCHPHASE) -->
+        <div id="trump-prep-box" class="prep-box flex flex-col items-center gap-0.5 text-center w-22 sm:w-28">
+          <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Trumpfkarte</span>
+          <div id="trump-card-slot" class="w-13 sm:w-16 rounded-xl shadow-xl flex items-center justify-center border border-white/20 bg-white/5 card-ratio"></div>
+          <div class="mt-0.5 flex flex-col items-center">
+            <div id="decisive-mode-number" class="text-2xl sm:text-3xl font-black tracking-tight text-amber-300 leading-none">50</div>
+            <div class="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Punkte-Ziel</div>
+          </div>
+        </div>
+
+        <!-- ZENTRALER JASSTEPPICH (GENAU MITTIG) -->
+        <div id="teppich-mat" class="flex-1 min-h-[145px] sm:min-h-[185px] md:min-h-[215px] rounded-2xl flex flex-col items-center justify-center relative p-1.5 mx-1 sm:mx-2 transition-all">
+          <div id="trick-slot-opp" class="mb-1 transition-all z-10"></div>
+          <div id="trick-slot-me" class="mt-1 transition-all z-10"></div>
+          
+          <div id="trick-toast" class="hidden absolute px-3 py-1.5 rounded-xl bg-black/90 border border-amber-400 text-amber-300 font-bold text-[11px] sm:text-xs shadow-2xl z-30 pointer-events-none transition-all">
+            Stich ausgewertet
+          </div>
+        </div>
+
+        <!-- 4ER-STAPEL (RECHTS IN TAUSCHPHASE) -->
+        <div id="reserve-prep-box" class="prep-box flex flex-col items-center gap-0.5 text-center w-22 sm:w-28">
+          <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">4er-Reserve</span>
+          <div id="reserve-stack-box" class="w-13 sm:w-16 rounded-xl card-back-swiss shadow-xl flex items-center justify-center border border-white/20 card-ratio">
+            <span id="reserve-count-label" class="text-xs font-black bg-black/80 px-2 py-0.5 rounded text-white">4</span>
+          </div>
+          <span class="text-[9px] text-slate-400 mt-0.5 font-medium">Tausch-Stapel</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VORZEITIGES RUNDENENDE BEI >100 PUNKTEN (ERSOFFEN) -->
+    <div id="early-end-bar" class="hidden max-w-md mx-auto w-full my-0.5 p-2 rounded-2xl bg-red-950/80 border border-red-500/60 shadow-xl flex items-center justify-between animate-bounce shrink-0">
+      <div class="text-xs text-red-200">
+        <span class="font-black text-red-400 flex items-center gap-1">⚠️ Über 100 Punkte!</span>
+        <span class="text-[10px] text-slate-300">Ein Spieler ist ersoffen.</span>
+      </div>
+      <button onclick="triggerEarlyRoundEnd()" class="px-3 py-1 rounded-xl bg-red-500 hover:bg-red-400 text-white font-black text-xs shadow-lg transition-all">
+        🏁 Runde beenden
+      </button>
+    </div>
+
+    <!-- BEDIENLEISTEN -->
+    <!-- 4 KARTEN TAUSCHEN (BERNSTEIN/GOLD) -->
+    <div id="step-swap4-bar" class="max-w-md mx-auto w-full my-0.5 p-1.5 sm:p-2 rounded-2xl bg-amber-950/40 border border-amber-400/50 shadow-xl flex items-center justify-between shrink-0">
+      <div class="text-[11px] sm:text-xs text-amber-200 flex items-center gap-1.5">
+        <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">Tauschen</span>
+        <span>4 Handkarten wählen: <b id="swap-counter" class="text-amber-300 text-sm">0/4</b></span>
+      </div>
+      <button id="btn-execute-swap" onclick="executeCardSwap()" disabled class="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-slate-950 text-xs transition-all shadow-md">
+        4 Karten tauschen ⇄
+      </button>
+    </div>
+
+    <!-- TRUMPF-TAUSCH (VIOLETT) -->
+    <div id="step-trump-swap-bar" class="hidden max-w-md mx-auto w-full my-0.5 p-1.5 sm:p-2 rounded-2xl bg-purple-950/40 border border-purple-400/60 shadow-2xl flex items-center justify-between animate-fade-in shrink-0">
+      <div class="text-[11px] sm:text-xs text-purple-200 flex items-center gap-1.5">
+        <span class="px-2 py-0.5 rounded-full bg-purple-400 text-slate-950 font-black text-[10px]">Trumpftausch</span>
+        <span id="step-trump-desc">Du hältst die Tauschkarte!</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="btn-trump-swap-action" onclick="executeTrumpSwapStep()" class="px-3 py-1 rounded-xl bg-purple-400 hover:bg-purple-300 text-slate-950 font-black text-xs shadow-md">
+          Tauschen ⇄
+        </button>
+        <button onclick="skipTrumpSwapStep()" class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs border border-white/10">
+          Weiter ➔
+        </button>
+      </div>
+    </div>
+
+    <!-- BEREIT / OK GEBEN (SMARAGDGRÜN) -->
+    <div id="step-ready-bar" class="hidden max-w-md mx-auto w-full my-0.5 p-1.5 sm:p-2 rounded-2xl bg-emerald-950/40 border border-emerald-400/60 shadow-xl flex items-center justify-between animate-fade-in shrink-0">
+      <div class="text-[11px] sm:text-xs text-emerald-200 flex items-center gap-1.5">
+        <span class="px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[10px]">Bereit</span>
+        <span id="ready-status-text">Beide müssen OK geben.</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="openWeisSelectionDialog()" class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sky-300 font-bold text-xs">
+          Weis wählen
+        </button>
+        <button id="btn-give-ready" onclick="giveReady()" class="px-3.5 py-1 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs shadow-lg animate-pulse">
+          👍 Bereit (OK)
+        </button>
+      </div>
+    </div>
+
+    <!-- EIGENE HAND (UNTEN, WÄHREND DES SPIELS SEHR DEZENT) -->
+    <div class="flex flex-col items-center gap-0.5 shrink-0 pb-1 w-full">
+      <div id="my-player-hud" class="flex items-center gap-2 px-3 py-0.5 rounded-full apple-panel text-[11px] shadow transition-all">
+        <span id="my-avatar" class="text-sm">👱‍♂️</span>
+        <span id="my-name" class="font-bold text-white">Jan</span>
+        <span id="my-location-tag" class="text-[9px] text-amber-300/80 bg-white/10 px-1.5 py-0.2 rounded-full">Kreuzlingen 🇨🇭</span>
+        
+        <span id="my-turn-status-badge" class="px-2 py-0.2 rounded-full bg-slate-800 text-slate-300 font-bold text-[9px] border border-white/10">Warten...</span>
+
+        <!-- MEIN STICH-HAUFEN & 1. STICH DAUERHAFT ANSCHAUEN -->
+        <div class="flex items-center gap-1 border-l border-white/15 pl-1.5">
+          <div id="my-pile-graphic" onclick="if(App.firstTrickData && App.firstTrickData.winner === App.user) openFirstTrickModal()" class="flex items-center -space-x-1.5 cursor-pointer" title="Tippen zum Anschauen"></div>
+          <span id="my-stiche-status" onclick="if(App.firstTrickData && App.firstTrickData.winner === App.user) openFirstTrickModal()" class="text-slate-300 text-[10px] font-semibold cursor-pointer">0 Stiche</span>
+          <button id="btn-view-first-trick" onclick="openFirstTrickModal()" class="hidden px-2 py-0.2 rounded-full bg-amber-400/25 hover:bg-amber-400/40 text-amber-300 border border-amber-400/40 text-[9px] font-black transition-all shadow">
+            🔍 1. Stich
+          </button>
+        </div>
+
+        <span id="my-weis-badge" class="hidden px-1.5 py-0.2 rounded-md bg-sky-500/20 text-sky-300 text-[9px] border border-sky-400/30">Weis: +0</span>
+      </div>
+
+      <div id="my-cards-row" class="flex justify-center -space-x-3.5 sm:-space-x-4 md:-space-x-5 py-0.5 w-full max-w-4xl px-1"></div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: 1. STICH ANSCHAUEN                 -->
+  <!-- ========================================== -->
+  <div id="first-trick-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl hidden animate-fade-in">
+    <div class="apple-glass max-w-sm w-full rounded-3xl p-5 shadow-2xl text-center">
+      <div class="text-2xl mb-1">🔍</div>
+      <h3 class="text-base font-black text-white mb-0.5">1. Stich der Runde</h3>
+      <p id="first-trick-info" class="text-xs text-amber-300 mb-4">Gewonnen von Jan (+11 Pkt)</p>
+      <div id="first-trick-cards-container" class="flex justify-center items-center gap-3 mb-5"></div>
+      <button onclick="closeFirstTrickModal()" class="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/15 transition-all">
+        Schliessen ✕
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FLOATING CHAT BUTTON                      -->
+  <!-- ========================================== -->
+  <button id="btn-open-chat" onclick="toggleChatDrawer()" class="fixed bottom-3 right-3 z-40 w-11 h-11 rounded-full apple-glass border border-amber-400/50 flex items-center justify-center text-xl shadow-2xl hover:scale-105 transition-all">
+    💬
+    <span id="chat-unread-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white font-black text-[10px] rounded-full flex items-center justify-center shadow">1</span>
+  </button>
+
+  <!-- ========================================== -->
+  <!-- LIVE-CHAT DRAWER                          -->
+  <!-- ========================================== -->
+  <div id="chat-drawer" class="fixed bottom-16 right-3 z-50 w-76 sm:w-84 rounded-3xl apple-glass shadow-2xl border border-white/20 p-3.5 hidden flex flex-col max-h-[70dvh] animate-fade-in">
+    <div class="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">💬</span>
+        <h3 class="text-xs font-black text-white">Jass-Chat</h3>
+      </div>
+      <button onclick="toggleChatDrawer()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+    </div>
+
+    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1 mb-2 max-h-52 text-xs">
+      <div class="text-[10px] text-slate-400 text-center italic py-1">Tippe auf eine Nachricht für Emoji-Reaktionen!</div>
+    </div>
+
+    <div class="flex items-center gap-1 overflow-x-auto pb-1.5 mb-1.5 text-[10px]">
+      <button onclick="sendQuickChat('Guet gschpielt! 👏')" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 whitespace-nowrap">Guet gschpielt! 👏</button>
+      <button onclick="sendQuickChat('Hesch Stöck? 👑')" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 whitespace-nowrap">Hesch Stöck? 👑</button>
+      <button onclick="sendQuickChat('Hoppla! 🙈')" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 whitespace-nowrap">Hoppla! 🙈</button>
+      <button onclick="sendQuickChat('Grüess us Kreuzlingen! 🇨🇭')" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 whitespace-nowrap">Kreuzlingen 🇨🇭</button>
+      <button onclick="sendQuickChat('Grüsse aus Berlin! 🐻')" class="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 whitespace-nowrap">Berlin 🇩🇪</button>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <input type="text" id="chat-input" onkeydown="if(event.key==='Enter')sendChatMessage()" placeholder="Nachricht..." class="flex-1 bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-white outline-none">
+      <button onclick="sendChatMessage()" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-colors">➤</button>
+    </div>
+
+    <div id="chat-reaction-popover" class="hidden absolute left-3 right-3 bg-slate-900 border border-white/20 rounded-2xl p-2 shadow-2xl flex items-center justify-around text-lg z-10 animate-fade-in">
+      <button onclick="applyReactionToActiveMsg('👍')">👍</button>
+      <button onclick="applyReactionToActiveMsg('❤️')">❤️</button>
+      <button onclick="applyReactionToActiveMsg('👏')">👏</button>
+      <button onclick="applyReactionToActiveMsg('😂')">😂</button>
+      <button onclick="applyReactionToActiveMsg('🧀')">🧀</button>
+      <button onclick="applyReactionToActiveMsg('👑')">👑</button>
+      <button onclick="applyReactionToActiveMsg('🔥')">🔥</button>
+      <button onclick="closeReactionPopover()" class="text-xs text-slate-400 font-bold ml-1">✕</button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. STÖCK-PROMPT MODAL                     -->
+  <!-- ========================================== -->
+  <div id="stoeck-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl hidden animate-fade-in">
+    <div class="apple-glass max-w-xs w-full rounded-3xl p-5 border border-amber-400/50 shadow-2xl text-center">
+      <div class="text-3xl mb-1.5">👑</div>
+      <h2 class="text-lg font-black text-white mb-0.5">Stöck weisen?</h2>
+      <p class="text-xs text-slate-300 mb-4">
+        Du spielst die zweite Stöck-Karte! Jetzt für <b class="text-amber-300">+20 Punkte</b> ansagen?
+      </p>
+
+      <div class="space-y-1.5">
+        <button onclick="confirmStoeckAnnouncement(true)" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black text-xs shadow-xl">
+          👑 Ja, Stöck ansagen (+20 Pkt)
+        </button>
+        <button onclick="confirmStoeckAnnouncement(false)" class="w-full py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs border border-white/10">
+          Ohne Weis spielen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. PROFIL & EMOJI-KATALOG                 -->
+  <!-- ========================================== -->
+  <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl hidden animate-fade-in">
+    <div class="apple-glass max-w-md w-full rounded-3xl p-5 shadow-2xl text-left max-h-[90dvh] flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-black text-white flex items-center gap-1.5">
+          <span>👤</span> <span>Profil anpassen</span>
+        </h2>
+        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 overflow-y-auto pr-1 flex-1">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Wohnort</label>
+            <input type="text" id="prof-city-input" placeholder="Ort" class="w-full bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Flagge</label>
+            <input type="text" id="prof-flag-input" maxlength="4" class="w-full bg-black/40 border border-white/15 rounded-xl px-2.5 py-1.5 text-center text-xs font-bold text-white outline-none">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[10px] font-bold text-slate-400 uppercase">Avatar Emoji</label>
+            <div id="current-avatar-preview" class="text-2xl">👱‍♂️</div>
+          </div>
+          <input type="text" id="emoji-search-input" oninput="filterEmojis()" placeholder="Emoji suchen (z.B. Totenkopf, Stoneface, Hund, Herz)..." class="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white outline-none mb-1.5">
+
+          <div class="flex items-center justify-between gap-1 mb-2 px-1 text-base bg-black/20 rounded-xl p-1">
+            <button type="button" onclick="setEmojiCategory('smileys')" class="hover:scale-125 transition-transform" title="Smileys & Gesichter">😀</button>
+            <button type="button" onclick="setEmojiCategory('hands')" class="hover:scale-125 transition-transform" title="Hände">👋</button>
+            <button type="button" onclick="setEmojiCategory('monkeys')" class="hover:scale-125 transition-transform" title="Tiere">🙈</button>
+            <button type="button" onclick="setEmojiCategory('hearts')" class="hover:scale-125 transition-transform" title="Herzen">❤️</button>
+            <button type="button" onclick="setEmojiCategory('food')" class="hover:scale-125 transition-transform" title="Essen">🍔</button>
+            <button type="button" onclick="setEmojiCategory('music_hobbies')" class="hover:scale-125 transition-transform" title="Musik &amp; Hobbys">🎵</button>
+            <button type="button" onclick="setEmojiCategory('outdoor')" class="hover:scale-125 transition-transform" title="Outdoor">🥾</button>
+            <button type="button" onclick="setEmojiCategory('flags')" class="hover:scale-125 transition-transform" title="Flaggen">🇨🇭</button>
+          </div>
+          
+          <div id="emoji-catalog-grid" class="grid grid-cols-8 gap-1.5 p-2 rounded-2xl bg-black/30 border border-white/10 max-h-40 overflow-y-auto text-xl"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-3 border-t border-white/10 mt-2">
+        <button onclick="saveProfileChanges()" class="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black text-xs shadow-xl">
+          Speichern ✓
+        </button>
+        <button onclick="closeProfileModal()" class="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs">
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. WEIS-AUSWAHL: SCHWEBENDES SHEET         -->
+  <!-- Handkarten bleiben unten 100% sichtbar!    -->
+  <!-- ========================================== -->
+  <div id="weis-select-modal" class="fixed inset-x-0 top-11 sm:top-13 z-50 flex justify-center p-2 sm:p-3 pointer-events-none hidden animate-fade-in">
+    <div class="apple-glass max-w-md w-full rounded-3xl p-4 shadow-2xl text-left pointer-events-auto border border-sky-400/50 max-h-[50dvh] sm:max-h-[54dvh] flex flex-col">
+      <div class="flex items-center justify-between mb-2 border-b border-white/10 pb-1.5">
+        <div>
+          <h2 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>Weise deklarieren</span>
+          </h2>
+          <p class="text-[10px] text-amber-300">Handkarten unten im Blick · Mehrere Farben kombinierbar</p>
+        </div>
+        <span id="modal-mode-pill" class="text-[10px] bg-white/10 px-2 py-0.5 rounded-lg font-bold text-slate-200">Ziel: 50</span>
+      </div>
+
+      <div id="weis-groups-container" class="space-y-2 mb-2 overflow-y-auto pr-1 flex-1"></div>
+
+      <!-- Live-Zusammenfassung der Weispunkte -->
+      <div class="p-1.5 sm:p-2 rounded-xl bg-sky-500/10 border border-sky-400/25 flex items-center justify-between mb-2">
+        <span class="text-xs font-bold text-slate-200">Total Weispunkte:</span>
+        <b id="weis-live-total" class="text-sm font-black text-sky-400">+0 Pkt</b>
+      </div>
+
+      <div class="flex gap-1.5">
+        <button id="btn-confirm-multi-weis" onclick="confirmWeisSelection()" class="flex-1 py-2 rounded-2xl bg-gradient-to-r from-sky-400 to-sky-500 hover:from-sky-300 text-slate-950 font-black text-xs shadow-xl">
+          Deklarieren ➔
+        </button>
+        <button onclick="passWeisEntirely()" class="px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs border border-white/10">
+          Passen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. WEIS-DUELL MODAL (ERGEBNIS)             -->
+  <!-- ========================================== -->
+  <div id="weis-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl hidden animate-fade-in">
+    <div class="apple-glass max-w-md w-full rounded-3xl p-5 shadow-2xl text-center">
+      <div class="text-2xl mb-1">🂠</div>
+      <h2 class="text-lg font-black mb-0.5 text-white">Weis-Duell</h2>
+      <p class="text-[11px] text-slate-300 mb-3">Höchster Einzelweis gewinnt alle gemeldeten Weisen</p>
+
+      <div class="grid grid-cols-2 gap-2 mb-3 text-left">
+        <div id="weis-box-me" class="p-2.5 rounded-2xl apple-panel">
+          <div class="font-bold text-[11px] text-emerald-400 mb-0.5 flex items-center justify-between">
+            <span id="weis-title-me">Jan</span>
+            <span id="weis-pts-me" class="text-white font-extrabold">0 Pkt</span>
+          </div>
+          <div id="weis-list-me" class="text-[10px] text-slate-300 space-y-0.5">Kein Weis</div>
+        </div>
+
+        <div id="weis-box-opp" class="p-2.5 rounded-2xl apple-panel">
+          <div class="font-bold text-[11px] text-amber-400 mb-0.5 flex items-center justify-between">
+            <span id="weis-title-opp">Rita</span>
+            <span id="weis-pts-opp" class="text-white font-extrabold">0 Pkt</span>
+          </div>
+          <div id="weis-list-opp" class="text-[10px] text-slate-300 space-y-0.5">Kein Weis</div>
+        </div>
+      </div>
+
+      <div id="weis-duel-outcome" class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-200 text-xs font-semibold mb-3 leading-relaxed">
+        -
+      </div>
+
+      <button onclick="closeWeisModal()" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black text-xs shadow-xl">
+        Weise annehmen &amp; Teppich ausrollen ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 7. RUNDEN-ENDE MODAL                       -->
+  <!-- ========================================== -->
+  <div id="result-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-xl hidden animate-fade-in">
+    <div class="apple-glass max-w-sm w-full rounded-3xl p-5 shadow-2xl text-center">
+      <div id="result-icon" class="text-3xl mb-1">🏆</div>
+      <h2 id="result-title" class="text-xl font-black mb-1 text-white">Runde beendet!</h2>
+      <div id="result-desc" class="text-xs text-slate-300 mb-4 leading-relaxed"></div>
+      <button onclick="startNewRound()" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-extrabold text-xs shadow-xl">
+        Nächste Runde austeilen ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JASS ENGINE (VOLLSTÄNDIGES JAVASCRIPT)                                    -->
+  <!-- ========================================================================= -->
+  <script>
+    /* =========================================================================
+       AUTHENTISCHE SCHWEIZER JASS-SYMBOLE
+       ========================================================================= */
+    const SVG_ICONS = {
+      eichel: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><ellipse cx="50" cy="58" rx="26" ry="32" fill="#78350f" /><path d="M 28 50 Q 50 88 72 50 Z" fill="#92400e" /><path d="M 20 44 C 20 28, 80 28, 80 44 Q 50 48 20 44 Z" fill="#b45309" stroke="#451a03" stroke-width="2"/><circle cx="36" cy="36" r="3" fill="#fef3c7" opacity="0.6"/><circle cx="50" cy="34" r="3.5" fill="#fef3c7" opacity="0.6"/><circle cx="64" cy="36" r="3" fill="#fef3c7" opacity="0.6"/><path d="M 50 30 Q 52 14 44 8" stroke="#451a03" stroke-width="4.5" fill="none" stroke-linecap="round"/></svg>`,
+      schilt: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><path d="M 22 16 Q 50 8 78 16 Q 84 56 50 92 Q 16 56 22 16 Z" fill="#0284c7" stroke="#0369a1" stroke-width="2.5"/><path d="M 24 22 L 76 78 L 68 84 L 18 30 Z" fill="#facc15" /><circle cx="50" cy="22" r="3" fill="#ffffff" /><circle cx="30" cy="40" r="3" fill="#ffffff" /><circle cx="70" cy="40" r="3" fill="#ffffff" /><circle cx="50" cy="78" r="3" fill="#ffffff" /></svg>`,
+      rosen: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><g fill="#e11d48" stroke="#881337" stroke-width="2"><circle cx="50" cy="32" r="18" /><circle cx="68" cy="45" r="18" /><circle cx="61" cy="68" r="18" /><circle cx="39" cy="68" r="18" /><circle cx="32" cy="45" r="18" /></g><circle cx="50" cy="50" r="13" fill="#facc15" stroke="#ca8a04" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="#fbbf24"/></svg>`,
+      schellen: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="54" r="32" fill="#d97706" stroke="#78350f" stroke-width="2"/><circle cx="50" cy="54" r="28" fill="#f59e0b" /><line x1="26" y1="58" x2="74" y2="58" stroke="#451a03" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="58" r="4.5" fill="#451a03"/><circle cx="64" cy="58" r="4.5" fill="#451a03"/><rect x="42" y="10" width="16" height="15" rx="3" fill="#991b1b" stroke="#451a03" stroke-width="2"/></svg>`,
+      // HERZ & ECKEN: BEIDE ROT (#dc2626)
+      herz: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><path d="M 50 88 C 20 62 10 42 10 26 C 10 12 22 6 34 6 C 42 6 47 11 50 16 C 53 11 58 6 66 6 C 78 6 90 12 90 26 C 90 42 80 62 50 88 Z" fill="#dc2626"/></svg>`,
+      karo: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><path d="M 50 6 L 88 50 L 50 94 L 12 50 Z" fill="#dc2626"/></svg>`,
+      // KREUZ & SCHAUFEL: BEIDE TIEFSCHWARZ (#111827)
+      kreuz: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="30" r="18" fill="#111827"/><circle cx="32" cy="54" r="18" fill="#111827"/><circle cx="68" cy="54" r="18" fill="#111827"/><path d="M 46 54 L 54 54 L 58 92 L 42 92 Z" fill="#111827"/></svg>`,
+      pik: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><path d="M 50 8 C 36 28 14 48 14 66 C 14 78 24 84 34 84 C 42 84 48 78 50 72 C 52 78 58 84 66 84 C 76 84 86 78 86 66 C 86 48 64 28 50 8 Z" fill="#111827"/><path d="M 46 68 L 54 68 L 58 94 L 42 94 Z" fill="#111827"/></svg>`
+    };
+
+    const SUITS_BY_ID = {
+      eichel:   { id: 'eichel',   deck: 'german', name_ch: 'Eichel',   name_de: 'Eichel', color: '#78350f', partner: 'kreuz' },
+      schilt:   { id: 'schilt',   deck: 'german', name_ch: 'Schilt',   name_de: 'Schilt', color: '#0284c7', partner: 'pik' },
+      rosen:    { id: 'rosen',    deck: 'german', name_ch: 'Rosen',    name_de: 'Rosen',  color: '#e11d48', partner: 'herz' },
+      schellen: { id: 'schellen', deck: 'german', name_ch: 'Schellen', name_de: 'Schellen', color: '#d97706', partner: 'karo' },
+      herz:     { id: 'herz',     deck: 'french', name_ch: 'Herz',     name_de: 'Herz',   color: '#dc2626', partner: 'rosen' },
+      karo:     { id: 'karo',     deck: 'french', name_ch: 'Ecken',    name_de: 'Karo',   color: '#dc2626', partner: 'schellen' },
+      kreuz:    { id: 'kreuz',    deck: 'french', name_ch: 'Kreuz',    name_de: 'Kreuz',  color: '#111827', partner: 'eichel' },
+      pik:      { id: 'pik',      deck: 'french', name_ch: 'Schaufel', name_de: 'Pik',    color: '#111827', partner: 'schilt' }
+    };
+
+    const SUIT_SORT_ORDER = {
+      herz: 1, rosen: 1,
+      kreuz: 2, eichel: 2,
+      karo: 3, schellen: 3,
+      pik: 4, schilt: 4
+    };
+
+    const SUIT_SETS = {
+      german: [SUITS_BY_ID.eichel, SUITS_BY_ID.schilt, SUITS_BY_ID.rosen, SUITS_BY_ID.schellen],
+      french: [SUITS_BY_ID.kreuz, SUITS_BY_ID.pik, SUITS_BY_ID.herz, SUITS_BY_ID.karo]
+    };
+
+    const RANKS = [
+      { id: '6', label: '6', order: 6 },
+      { id: '7', label: '7', order: 7 },
+      { id: '8', label: '8', order: 8 },
+      { id: '9', label: '9', order: 9 },
+      { id: '10', label: '10', order: 10 },
+      { id: 'under', label: 'Bauer', short: 'B', order: 11 },
+      { id: 'ober', label: 'Dame', short: 'D', order: 12 },
+      { id: 'koenig', label: 'König', short: 'K', order: 13 },
+      { id: 'ass', label: 'Ass', short: 'A', order: 14 }
+    ];
+
+    let Profiles = {
+      Jan: { name: 'Jan', avatar: '👱‍♂️', city: 'Kreuzlingen', flag: '🇨🇭' },
+      Rita: { name: 'Rita', avatar: '👩', city: 'Berlin', flag: '🇩🇪' }
+    };
+
+    const WHATSAPP_EMOJIS = {
+      smileys: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👻','👽','👾','🤖','🗿'],
+      hands: ['🫶','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','👃','🧠','🫀','🫁','👁️','👅','👄','🫦','✌️','🤞','🫰','🤟','🤘','🤙','🤌','🤏','👌','👋','🤚','🖐️','✋','🖖','🫱','🫲','🫳','🫴','🫵','👉','👈','👆','👇','☝️'],
+      monkeys: ['🐵','🙈','🙉','🙊','🐒','🦍','🦧','🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐔','🐧','🐦','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐢','🐍','🐙','🦑','🦀','🐡','🐠','🐟','🐬','🐳','🦈','🐊','🐆','🦓','🐘','🦏','🦛','🐪','🦒','🦘','🐂','🐄','🐎','🐖','🐏','🐑','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🕊️','🐇','🐿️','🦔'],
+      hearts: ['🫶','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','❤️‍🔥','❤️‍🩹','🫀','💌','💋','💯','💢','💥','💫','✨'],
+      food: ['🥝','🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥥','🍅','🥑','🥦','🌽','🥕','🥔','🍞','🥐','🥖','🥨','🧀','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🌮','🌯','🥗','🍲','🍝','🍜','🍣','🍱','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🍫','🍬','🍭','🍿','☕','🍵','🧃','🥤','🍺','🍻','🍷','🥂','🥃'],
+      music_hobbies: ['🌻','🧶','🪡','🧵','🧷','🎵','🎶','🎼','🪈','🎹','🎻','🎸','🎺','🎷','🥁','📚','📖','📕','📗','📘','📙','📓','🎨','🖌️','🎭','🎬','🎤','🎧','🎮','🎲','♟️','🎯','🎳','🂠','🧩'],
+      outdoor: ['🥾','⛺','🏕️','🔥','🪵','🔪','🗡️','🌲','🌳','🍀','🍁','🌸','🌹','🌻','🏔️','⛰️','🎿','⛷️','🏂','🎣','🏹','🏆','🥇','🥈','🥉','🂠','🎲','🎯','👑','🔔','🌰','🛡️','♠️','♥️','♦️','♣️','🗿'],
+      flags: ['🇨🇭','🇩🇪','🇦🇹','🇱🇮','🇮🇹','🇫🇷','🇪🇸','🇵🇹','🇬🇧','🇮🇪','🇳🇱','🇧🇪','🇱🇺','🇩🇰','🇸🇪','🇳🇴','🇫🇮','🇮🇸','🇵🇱','🇨🇿','🇸🇰','🇭🇺','🇷🇴','🇧🇬','🇬🇷','🇹🇷','🇺🇦','🇷🇺','🇭🇷','🇷🇸','🇧🇦','🇸🇮','🇲🇪','🇲🇰','🇦🇱','🇽🇰','🇺🇸','🇨🇦','🇲🇽','🇧🇷','🇦🇷','🇨🇱','🇨🇴','🇵🇪','🇺🇾','🇯🇵','🇰🇷','🇨🇳','🇮🇳','🇹🇼','🇻🇳','🇹🇭','🇵🇭','🇮🇩','🇲🇾','🇸🇬','🇦🇺','🇳🇿','🇿🇦','🇪🇬','🇲🇦','🇳🇬','🇰🇪','🇮🇱','🇸🇦','🇦🇪','🇶🇦','🇪🇺','🏴󠁧󠁢󠁳󠁣󠁴󠁿','🏴󠁧󠁢󠁥󠁮󠁧󠁿','🏴󠁧󠁢󠁷󠁬󠁳󠁿','🏳️‍🌈','🏁']
+    };
+
+    let App = {
+      user: 'Jan',
+      opponent: 'Rita',
+      gameMode: 'bot',
+      deckType: 'german',
+      namingVariant: 'swiss',
+      theme: 'felt',
+
+      peer: null,
+      conn: null,
+      isHost: false,
+
+      phase: 'STEP_SWAP4',
+      dealer: 'Rita',
+      currentTurn: 'Jan',
+
+      trumpCard: null,
+      trumpSuit: null,
+      activeModeId: 'NULLER',
+      trumpExchanged: false,
+      firstCardPlayed: false,
+
+      hideScores: false,
+      isProcessingMove: false,
+
+      myHand: [],
+      myReserve: [],
+      selectedSwapCards: [],
+
+      oppHand: [],
+      oppReserve: [],
+
+      userReady: false,
+      oppReady: false,
+
+      currentTrick: [],
+      trickCount: { Jan: 0, Rita: 0 },
+      cardPoints: { Jan: 0, Rita: 0 },
+      weisPoints: { Jan: 0, Rita: 0 },
+
+      firstTrickData: null,
+
+      stoeckOriginalHolders: { Jan: false, Rita: false },
+      stoeckCardsPlayed: { Jan: 0, Rita: 0 },
+      stoeckAnnounced: { Jan: false, Rita: false },
+
+      userChosenWeisList: [],
+      oppChosenWeisList: [],
+      availableWeisGroups: [],
+
+      chatMessages: [],
+      unreadChatCount: 0,
+      activeReactionMsgId: null
+    };
+
+    const Sound = {
+      ctx: null,
+      init() {
+        try {
+          if (!this.ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) this.ctx = new AC();
+          }
+        } catch(e) {}
+      },
+      beep(freq, dur = 0.08) {
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.value = freq;
+          gain.gain.value = 0.12;
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + dur);
+        } catch(e) {}
+      },
+      card() { this.beep(360, 0.05); },
+      swap() { this.beep(520, 0.07); },
+      select() { this.beep(480, 0.04); },
+      teppich() { 
+        this.beep(260, 0.12); 
+        setTimeout(() => this.beep(380, 0.14), 100); 
+        setTimeout(() => this.beep(520, 0.22), 220); 
+      },
+      trick() { this.beep(440, 0.06); setTimeout(() => this.beep(660, 0.09), 60); },
+      weis() {
+        this.beep(440, 0.1);
+        setTimeout(() => this.beep(554, 0.1), 90);
+        setTimeout(() => this.beep(659, 0.18), 180);
+      },
+      win() {
+        this.beep(523, 0.1);
+        setTimeout(() => this.beep(659, 0.12), 90);
+        setTimeout(() => this.beep(783, 0.22), 190);
+      }
+    };
+
+    function getFairRandomInt(range) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const maxValid = Math.floor(0xFFFFFFFF / range) * range;
+        const buf = new Uint32Array(1);
+        do {
+          window.crypto.getRandomValues(buf);
+        } while (buf[0] >= maxValid);
+        return buf[0] % range;
+      }
+      return Math.floor(Math.random() * range);
+    }
+
+    function fisherYatesShuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        let j;
+        try {
+          j = getFairRandomInt(i + 1);
+        } catch(e) {
+          j = Math.floor(Math.random() * (i + 1));
+        }
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function getSuitName(suitId) {
+      const s = SUITS_BY_ID[suitId];
+      if (!s) return suitId;
+      return (App.namingVariant === 'swiss') ? s.name_ch : s.name_de;
+    }
+
+    function createDeck() {
+      const suits = SUIT_SETS[App.deckType] || SUIT_SETS.german;
+      let deck = [];
+      suits.forEach(s => {
+        RANKS.forEach(r => {
+          deck.push({
+            id: `${s.id}_${r.id}`,
+            suitId: s.id,
+            suitColor: s.color,
+            rankId: r.id,
+            rankLabel: r.label,
+            short: r.short || r.label,
+            order: r.order
+          });
+        });
+      });
+      return fisherYatesShuffle(deck);
+    }
+
+    function toggleNamingVariant() {
+      App.namingVariant = (App.namingVariant === 'swiss') ? 'german' : 'swiss';
+      const btn = document.getElementById('btn-naming-toggle');
+      if (btn) btn.textContent = (App.namingVariant === 'swiss') ? '🇨🇭 CH' : '🇩🇪 DE';
+      renderAll();
+      showTrickToast(App.namingVariant === 'swiss' ? 'Schweiz: Ecken, Schaufel' : 'Deutschland: Karo, Pik');
+    }
+
+    function toggleScoreVisibility() {
+      App.hideScores = !App.hideScores;
+      Sound.select();
+      renderHeaderScores();
+
+      showTrickToast(App.hideScores ? "Punkte verdeckt – selber mitrechnen!" : "Punkte aufgedeckt!");
+
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'TOGGLE_HIDE_SCORES', hideScores: App.hideScores });
+      }
+    }
+
+    function convertSingleCardToDeck(card, targetDeck) {
+      if (!card || !card.suitId) return card;
+      const currentMeta = SUITS_BY_ID[card.suitId];
+      if (!currentMeta || currentMeta.deck === targetDeck) return card;
+
+      const partnerMeta = SUITS_BY_ID[currentMeta.partner];
+      card.suitId = partnerMeta.id;
+      card.suitColor = partnerMeta.color;
+      card.id = `${partnerMeta.id}_${card.rankId}`;
+      return card;
+    }
+
+    function toggleDeckType() {
+      App.deckType = (App.deckType === 'german') ? 'french' : 'german';
+      Sound.swap();
+
+      if (App.trumpSuit) {
+        const tMeta = SUITS_BY_ID[App.trumpSuit];
+        if (tMeta && tMeta.deck !== App.deckType) {
+          App.trumpSuit = tMeta.partner;
+        }
+      }
+
+      if (App.trumpCard) convertSingleCardToDeck(App.trumpCard, App.deckType);
+      App.myHand.forEach(c => convertSingleCardToDeck(c, App.deckType));
+      App.oppHand.forEach(c => { if (c.id) convertSingleCardToDeck(c, App.deckType); });
+      App.myReserve.forEach(c => convertSingleCardToDeck(c, App.deckType));
+      App.oppReserve.forEach(c => convertSingleCardToDeck(c, App.deckType));
+
+      App.currentTrick.forEach(item => {
+        if (item.card) convertSingleCardToDeck(item.card, App.deckType);
+      });
+
+      App.selectedSwapCards = App.selectedSwapCards.map(id => {
+        const parts = id.split('_');
+        const sId = parts[0];
+        const rId = parts[1];
+        const meta = SUITS_BY_ID[sId];
+        return meta ? `${meta.partner}_${rId}` : id;
+      });
+
+      const isGer = (App.deckType === 'german');
+      const iconEl = document.getElementById('deck-icon');
+      const labelEl = document.getElementById('deck-label');
+      if (iconEl) iconEl.textContent = isGer ? '🌰' : '♠';
+      if (labelEl) labelEl.textContent = isGer ? 'Deutsch' : 'Französisch';
+
+      sortHand(App.myHand);
+      renderAll();
+
+      const row = document.getElementById('my-cards-row');
+      if (row) {
+        row.classList.add('deck-switch-anim');
+        setTimeout(() => row.classList.remove('deck-switch-anim'), 350);
+      }
+
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'DECK_CHANGED', deckType: App.deckType });
+      }
+    }
+
+    function loadSavedProfiles() {
+      try {
+        const savedJan = localStorage.getItem('jass_profile_Jan');
+        const savedRita = localStorage.getItem('jass_profile_Rita');
+        if (savedJan) Profiles.Jan = Object.assign(Profiles.Jan, JSON.parse(savedJan));
+        if (savedRita) Profiles.Rita = Object.assign(Profiles.Rita, JSON.parse(savedRita));
+      } catch(e) {}
+    }
+
+    function selectUser(name) {
+      App.user = name;
+      App.opponent = (name === 'Jan') ? 'Rita' : 'Jan';
+      
+      const isJan = (name === 'Jan');
+      const btnJan = document.getElementById('btn-user-jan');
+      const btnRita = document.getElementById('btn-user-rita');
+      if (btnJan) {
+        btnJan.className = isJan 
+          ? "p-2.5 sm:p-3 rounded-2xl border-2 border-amber-400 bg-amber-500/20 text-left transition-all flex items-center gap-2.5"
+          : "p-2.5 sm:p-3 rounded-2xl border-2 border-white/10 bg-white/5 hover:bg-white/10 text-left transition-all flex items-center gap-2.5";
+      }
+      if (btnRita) {
+        btnRita.className = !isJan 
+          ? "p-2.5 sm:p-3 rounded-2xl border-2 border-amber-400 bg-amber-500/20 text-left transition-all flex items-center gap-2.5"
+          : "p-2.5 sm:p-3 rounded-2xl border-2 border-white/10 bg-white/5 hover:bg-white/10 text-left transition-all flex items-center gap-2.5";
+      }
+
+      const botLbl = document.getElementById('btn-bot-label');
+      if (botLbl) {
+        botLbl.textContent = isJan ? "Gegen schlauen Rita-Bot üben" : "Gegen schlauen Jan-Bot üben";
+      }
+      const onlineTxt = document.getElementById('btn-online-text');
+      if (onlineTxt) {
+        onlineTxt.textContent = `Mit ${Profiles[App.opponent].name} online spielen`;
+      }
+      updateLabels();
+    }
+
+    function updateLabels() {
+      const myP = Profiles[App.user];
+      const oppP = Profiles[App.opponent];
+
+      const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+      setT('lbl-me', myP.name);
+      setT('lbl-opp', oppP.name);
+
+      setT('my-name', myP.name);
+      setT('opp-name', oppP.name);
+      setT('my-avatar', myP.avatar);
+      setT('opp-avatar', oppP.avatar);
+
+      setT('my-location-tag', `${myP.city} ${myP.flag}`);
+      setT('opp-location-tag', `${oppP.city} ${oppP.flag}`);
+
+      setT('login-avatar-jan', Profiles.Jan.avatar);
+      setT('login-name-jan', Profiles.Jan.name);
+      setT('login-loc-jan', `${Profiles.Jan.city} ${Profiles.Jan.flag}`);
+
+      setT('login-avatar-rita', Profiles.Rita.avatar);
+      setT('login-name-rita', Profiles.Rita.name);
+      setT('login-loc-rita', `${Profiles.Rita.city} ${Profiles.Rita.flag}`);
+
+      setT('weis-title-me', myP.name);
+      setT('weis-title-opp', oppP.name);
+
+      const dealerName = Profiles[App.dealer] ? Profiles[App.dealer].name : App.dealer;
+      setT('header-dealer-txt', `${dealerName} gibt aus`);
+    }
+
+    /* PROFIL & EMOJI PICKER */
+    let currentSelectedAvatar = '👱‍♂️';
+    let currentEmojiCategory = 'smileys';
+
+    function openProfileModal() {
+      const p = Profiles[App.user];
+      currentSelectedAvatar = p.avatar;
+      const preview = document.getElementById('current-avatar-preview');
+      if (preview) preview.textContent = p.avatar;
+
+      const cityInp = document.getElementById('prof-city-input');
+      if (cityInp) cityInp.value = p.city;
+      const flagInp = document.getElementById('prof-flag-input');
+      if (flagInp) flagInp.value = p.flag;
+      const searchInp = document.getElementById('emoji-search-input');
+      if (searchInp) searchInp.value = '';
+      
+      setEmojiCategory('smileys');
+      const modal = document.getElementById('profile-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeProfileModal() {
+      const modal = document.getElementById('profile-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function setEmojiCategory(cat) {
+      currentEmojiCategory = cat;
+      const searchInp = document.getElementById('emoji-search-input');
+      if (searchInp) searchInp.value = '';
+      renderEmojiCatalog();
+    }
+
+    function selectEmojiFromCatalog(char) {
+      currentSelectedAvatar = char;
+      const preview = document.getElementById('current-avatar-preview');
+      if (preview) preview.textContent = char;
+      Sound.select();
+    }
+
+    function filterEmojis() {
+      const inp = document.getElementById('emoji-search-input');
+      const term = (inp ? inp.value : '').toLowerCase().trim();
+      const grid = document.getElementById('emoji-catalog-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (!term) {
+        renderEmojiCatalog();
+        return;
+      }
+
+      let all = [];
+      Object.values(WHATSAPP_EMOJIS).forEach(list => all.push(...list));
+
+      const KEYWORDS = {
+        'kiwi': ['🥝'],
+        'hand herz': ['🫶'],
+        'handherz': ['🫶'],
+        'zelt': ['⛺','🏕️'],
+        'feuer': ['🔥','🏕️','🪵'],
+        'lagerfeuer': ['🔥','🏕️','🪵'],
+        'messer': ['🔪','🗡️'],
+        'stiefel': ['🥾'],
+        'wanderstiefel': ['🥾'],
+        'schuh': ['🥾'],
+        'schweiz': ['🇨🇭','🧀','🏔️'],
+        'deutschland': ['🇩🇪','🍺'],
+        'affe': ['🐵','🙈','🙉','🙊','🐒','🦍','🦧'],
+        'herz': ['🫶','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝'],
+        'käse': ['🧀'],
+        'krone': ['👑'],
+        'hund': ['🐶','🐕','🐩'],
+        'katze': ['🐱','🐈'],
+        'bier': ['🍺','🍻'],
+        'berg': ['🏔️','⛰️'],
+        'jass': ['🂠','👑','🔔','🌹','🌰','🛡️','♠️','♥️','♦️','♣️'],
+        'sonnenblume': ['🌻'],
+        'blume': ['🌻','🌹','🌸'],
+        'stricken': ['🧶'],
+        'wolle': ['🧶'],
+        'nähen': ['🪡','🧵','🧷'],
+        'faden': ['🧵','🪡'],
+        'nadel': ['🪡'],
+        'musiknoten': ['🎵','🎶','🎼'],
+        'noten': ['🎵','🎶','🎼'],
+        'musik': ['🎵','🎶','🎼','🪈','🎹','🎻','🎸','🎺','🎷','🥁','🎤','🎧'],
+        'blockflöte': ['🪈'],
+        'flöte': ['🪈'],
+        'klavier': ['🎹'],
+        'piano': ['🎹'],
+        'geige': ['🎻'],
+        'violine': ['🎻'],
+        'bücher': ['📚','📖','📕','📗','📘'],
+        'buch': ['📚','📖','📕','📗','📘'],
+        'totenkopf': ['💀','☠️'],
+        'skull': ['💀','☠️'],
+        'tot': ['💀','☠️'],
+        'stoneface': ['🗿'],
+        'moai': ['🗿'],
+        'stein': ['🗿'],
+        'statue': ['🗿']
+      };
+
+      let directMatches = [];
+      for (const k in KEYWORDS) {
+        if (term.includes(k) || k.includes(term)) {
+          directMatches.push(...KEYWORDS[k]);
+        }
+      }
+
+      const matched = all.filter(c => c.includes(term) || directMatches.includes(c));
+      const displayList = Array.from(new Set([...directMatches, ...matched]));
+
+      if (displayList.length === 0) {
+        grid.innerHTML = `<div class="col-span-8 text-center text-xs text-slate-400 py-3">Kein Emoji gefunden</div>`;
+        return;
+      }
+
+      displayList.forEach(char => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'p-1 rounded-xl hover:bg-white/20 transition-all flex items-center justify-center';
+        btn.textContent = char;
+        btn.onclick = () => selectEmojiFromCatalog(char);
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderEmojiCatalog() {
+      const grid = document.getElementById('emoji-catalog-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const list = WHATSAPP_EMOJIS[currentEmojiCategory] || WHATSAPP_EMOJIS.smileys;
+      list.forEach(char => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'p-1 rounded-xl hover:bg-white/20 transition-all flex items-center justify-center';
+        btn.textContent = char;
+        btn.onclick = () => selectEmojiFromCatalog(char);
+        grid.appendChild(btn);
+      });
+    }
+
+    function saveProfileChanges() {
+      const cityInp = document.getElementById('prof-city-input');
+      const flagInp = document.getElementById('prof-flag-input');
+      const ci = (cityInp ? cityInp.value : '').trim() || (App.user === 'Jan' ? 'Kreuzlingen' : 'Berlin');
+      const fl = (flagInp ? flagInp.value : '').trim() || (App.user === 'Jan' ? '🇨🇭' : '🇩🇪');
+
+      Profiles[App.user].avatar = currentSelectedAvatar || (App.user === 'Jan' ? '👱‍♂️' : '👩');
+      Profiles[App.user].city = ci;
+      Profiles[App.user].flag = fl;
+
+      try {
+        localStorage.setItem(`jass_profile_${App.user}`, JSON.stringify(Profiles[App.user]));
+      } catch(e) {}
+
+      updateLabels();
+      closeProfileModal();
+      showTrickToast("Profil aktualisiert!");
+
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'PROFILE_SYNC', user: App.user, profile: Profiles[App.user] });
+      }
+    }
+
+    function openLoginScreen() { const el = document.getElementById('login-screen'); if (el) el.classList.remove('hidden'); }
+    function closeLoginScreen() { const el = document.getElementById('login-screen'); if (el) el.classList.add('hidden'); }
+    function showOnlineLobby() { const el = document.getElementById('online-lobby-panel'); if (el) el.classList.remove('hidden'); initPeer(); }
+
+    function startGameMode(mode) {
+      try {
+        App.gameMode = mode;
+        const netPill = document.getElementById('network-pill');
+        if (netPill) netPill.textContent = mode === 'bot' ? 'Bot' : 'Online';
+        closeLoginScreen();
+        startNewRound();
+      } catch(e) {
+        console.error("Fehler beim Spielstart:", e);
+        alert("Fehler beim Starten: " + e.message);
+      }
+    }
+
+    function toggleTheme() {
+      App.theme = App.theme === 'felt' ? 'dark' : 'felt';
+      document.body.className = `${App.theme}-theme text-white flex flex-col justify-between overflow-hidden`;
+    }
+
+    /* =========================================================================
+       CHAT SYSTEM
+       ========================================================================= */
+    function toggleChatDrawer() {
+      const drawer = document.getElementById('chat-drawer');
+      if (!drawer) return;
+      drawer.classList.toggle('hidden');
+      if (!drawer.classList.contains('hidden')) {
+        App.unreadChatCount = 0;
+        const badge = document.getElementById('chat-unread-badge');
+        if (badge) badge.classList.add('hidden');
+        const container = document.getElementById('chat-messages');
+        if (container) container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function sendQuickChat(text) {
+      sendChatMessage(text);
+    }
+
+    function sendChatMessage(presetText) {
+      const input = document.getElementById('chat-input');
+      const text = presetText || (input ? input.value : '').trim();
+      if (!text) return;
+      if (input && !presetText) input.value = '';
+
+      const msg = {
+        id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        sender: App.user,
+        name: Profiles[App.user].name,
+        avatar: Profiles[App.user].avatar,
+        text: text,
+        reactions: []
+      };
+
+      appendChatMessage(msg);
+
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'CHAT_MSG', message: msg });
+      } else if (App.gameMode === 'bot') {
+        triggerBotChatReply(text);
+      }
+    }
+
+    function appendChatMessage(msg) {
+      App.chatMessages.push(msg);
+      renderChatMessages();
+
+      const drawer = document.getElementById('chat-drawer');
+      if (drawer && drawer.classList.contains('hidden')) {
+        App.unreadChatCount++;
+        const badge = document.getElementById('chat-unread-badge');
+        if (badge) {
+          badge.textContent = App.unreadChatCount;
+          badge.classList.remove('hidden');
+        }
+      }
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chat-messages');
+      if (!container) return;
+      container.innerHTML = '';
+
+      App.chatMessages.forEach(m => {
+        const isMe = (m.sender === App.user);
+        const el = document.createElement('div');
+        el.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} cursor-pointer group`;
+        el.onclick = () => openReactionPopover(m.id);
+
+        const reactionsHtml = (m.reactions && m.reactions.length > 0)
+          ? `<div class="flex gap-1 -mt-1.5 px-2 py-0.5 rounded-full bg-slate-900 border border-white/20 text-[10px] shadow">${m.reactions.join('')}</div>`
+          : '';
+
+        el.innerHTML = `
+          <div class="flex items-end gap-1.5 max-w-[85%]">
+            ${!isMe ? `<span class="text-xs mb-1">${m.avatar}</span>` : ''}
+            <div class="p-2 rounded-2xl ${isMe ? 'bg-amber-500/25 border border-amber-400/30 text-white' : 'apple-panel text-slate-100'}">
+              <div class="text-[9px] text-slate-400 font-bold mb-0.5">${m.name}</div>
+              <div class="leading-tight break-words">${m.text}</div>
+            </div>
+            ${isMe ? `<span class="text-xs mb-1">${m.avatar}</span>` : ''}
+          </div>
+          ${reactionsHtml}
+        `;
+        container.appendChild(el);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function openReactionPopover(msgId) {
+      App.activeReactionMsgId = msgId;
+      const popover = document.getElementById('chat-reaction-popover');
+      if (popover) {
+        popover.classList.remove('hidden');
+        popover.style.bottom = '55px';
+      }
+    }
+
+    function closeReactionPopover() {
+      const popover = document.getElementById('chat-reaction-popover');
+      if (popover) popover.classList.add('hidden');
+      App.activeReactionMsgId = null;
+    }
+
+    function applyReactionToActiveMsg(emoji) {
+      if (!App.activeReactionMsgId) return;
+      const msg = App.chatMessages.find(m => m.id === App.activeReactionMsgId);
+      if (msg) {
+        if (!msg.reactions.includes(emoji)) msg.reactions.push(emoji);
+        renderChatMessages();
+
+        if (App.gameMode === 'online') {
+          sendNet({ type: 'CHAT_REACTION', msgId: msg.id, emoji: emoji });
+        }
+      }
+      closeReactionPopover();
+    }
+
+    function triggerBotChatReply(userText) {
+      setTimeout(() => {
+        const replies = [
+          "Guet gschpielt! 👏",
+          "Dä Stich isch knapp gsi! 🔥",
+          "Pass uff, Berlin schläft nie! 🐻",
+          "Ich han e gueti Hand! 😉",
+          "Hoppla! Dä ha-n-i nöd gseh cho! 🙈",
+          "Bim Jasse git's kei Gnad! 🧀"
+        ];
+        const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        const botMsg = {
+          id: 'msg_bot_' + Date.now(),
+          sender: App.opponent,
+          name: Profiles[App.opponent].name,
+          avatar: Profiles[App.opponent].avatar,
+          text: randomReply,
+          reactions: []
+        };
+        appendChatMessage(botMsg);
+      }, 1100);
+    }
+
+    /* =========================================================================
+       MULTIPLAYER (PEERJS)
+       ======================================================================== */
+    function initPeer() {
+      if (App.peer || typeof Peer === 'undefined') return;
+      try {
+        App.peer = new Peer({ config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+        App.peer.on('open', (id) => { const el = document.getElementById('my-peer-id'); if (el) el.value = id; });
+        App.peer.on('connection', (conn) => { App.conn = conn; App.isHost = true; setupConn(); });
+        App.peer.on('error', (err) => console.warn(err));
+      } catch(e) {}
+    }
+
+    function copyMyCode() {
+      const el = document.getElementById('my-peer-id');
+      const code = el ? el.value : '';
+      if (code) { navigator.clipboard.writeText(code); alert("Code kopiert! An Partnerin senden."); }
+    }
+
+    function joinRoom() {
+      const inp = document.getElementById('remote-peer-input');
+      const code = inp ? inp.value.trim() : '';
+      if (!code) return alert("Bitte Code eingeben!");
+      initPeer();
+      setTimeout(() => { 
+        if (App.peer) {
+          App.conn = App.peer.connect(code); 
+          App.isHost = false; 
+          setupConn(); 
+        }
+      }, 300);
+    }
+
+    function setupConn() {
+      if (!App.conn) return;
+      App.conn.on('open', () => { 
+        alert("Erfolgreich online verbunden!"); 
+        const pill = document.getElementById('network-pill');
+        if (pill) {
+          pill.className = "text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold border border-emerald-400";
+          pill.textContent = "Online 🟢";
+        }
+        sendNet({ type: 'PROFILE_SYNC', user: App.user, profile: Profiles[App.user] });
+        sendNet({ type: 'TOGGLE_HIDE_SCORES', hideScores: App.hideScores });
+        startGameMode('online'); 
+      });
+
+      App.conn.on('data', (data) => {
+        if (data.type === 'PROFILE_SYNC') {
+          Profiles[data.user] = data.profile;
+          updateLabels();
+        } else if (data.type === 'CHAT_MSG') {
+          appendChatMessage(data.message);
+        } else if (data.type === 'CHAT_REACTION') {
+          const msg = App.chatMessages.find(m => m.id === data.msgId);
+          if (msg && !msg.reactions.includes(data.emoji)) {
+            msg.reactions.push(data.emoji);
+            renderChatMessages();
+          }
+        } else if (data.type === 'TOGGLE_HIDE_SCORES') {
+          App.hideScores = data.hideScores;
+          renderHeaderScores();
+          showTrickToast(App.hideScores ? "Partner hat Punkte verdeckt!" : "Partner hat Punkte aufgedeckt!");
+        } else if (data.type === 'SYNC_ROUND') {
+          App.trumpCard = data.trumpCard;
+          App.trumpSuit = data.trumpSuit;
+          App.activeModeId = data.activeModeId;
+          App.myHand = data.clientHand;
+          App.myReserve = data.clientReserve;
+          App.oppHand = new Array(12).fill({});
+          App.dealer = data.dealer;
+          App.phase = 'STEP_SWAP4';
+          App.trumpExchanged = false;
+          App.firstCardPlayed = false;
+          App.userReady = false;
+          App.oppReady = false;
+          App.isProcessingMove = false;
+          App.selectedSwapCards = [];
+          App.currentTrick = [];
+          App.firstTrickData = null;
+          App.currentTurn = data.currentTurn;
+          sortHand(App.myHand);
+          resetTeppichView();
+          renderAll();
+        } else if (data.type === 'CARD_PLAYED') {
+          executePlayCard(data.player, data.card);
+        } else if (data.type === 'TRUMP_SWAPPED') {
+          App.trumpCard = data.card;
+          App.trumpExchanged = true;
+          renderTrumpSlot();
+        } else if (data.type === 'PARTNER_READY') {
+          App.oppReady = true;
+          App.oppChosenWeisList = data.weises;
+          checkBothReadyToPlay();
+        } else if (data.type === 'STOECK_ANNOUNCED') {
+          App.stoeckAnnounced[data.player] = true;
+          App.weisPoints[data.player] += 20;
+          Sound.weis();
+          showTrickToast(`👑 STÖCK! +20 Punkte für ${Profiles[data.player].name}!`);
+          renderHeaderScores();
+          checkEarlyEndOption();
+        } else if (data.type === 'FORCE_END_ROUND') {
+          evaluateRoundEnd();
+        } else if (data.type === 'DECK_CHANGED') {
+          if (App.deckType !== data.deckType) toggleDeckType();
+        }
+      });
+    }
+
+    function sendNet(msg) {
+      if (App.conn && App.conn.open) App.conn.send(msg);
+    }
+
+    /* =========================================================================
+       AUSTEILEN & RUNDENSTART
+       ========================================================================= */
+    function startNewRound() {
+      const hideEl = id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      };
+      hideEl('result-modal');
+      hideEl('weis-modal');
+      hideEl('weis-select-modal');
+      hideEl('stoeck-modal');
+      hideEl('first-trick-modal');
+      hideEl('early-end-bar');
+      hideEl('btn-view-first-trick');
+
+      Sound.init();
+      resetTeppichView();
+
+      const deck = createDeck();
+
+      App.myHand = deck.slice(0, 12);
+      App.oppHand = deck.slice(12, 24);
+      App.myReserve = deck.slice(24, 28);
+      App.oppReserve = deck.slice(28, 32);
+
+      const deadPile = deck.slice(32, 36);
+      App.trumpCard = deadPile[3];
+      App.trumpSuit = App.trumpCard.suitId;
+      App.trumpExchanged = false;
+      App.firstCardPlayed = false;
+      App.isProcessingMove = false;
+      App.firstTrickData = null;
+
+      const v = App.trumpCard.order;
+      if (v <= 8) {
+        App.activeModeId = 'NULLER';
+      } else if (v <= 11) {
+        App.activeModeId = '50';
+      } else {
+        App.activeModeId = '100';
+      }
+
+      App.dealer = (App.dealer === App.user) ? App.opponent : App.user;
+      App.currentTurn = (App.dealer === App.user) ? App.opponent : App.user;
+
+      App.phase = 'STEP_SWAP4';
+      App.selectedSwapCards = [];
+      App.currentTrick = [];
+      App.trickCount = { Jan: 0, Rita: 0 };
+      App.cardPoints = { Jan: 0, Rita: 0 };
+      App.weisPoints = { Jan: 0, Rita: 0 };
+
+      App.stoeckOriginalHolders = { Jan: false, Rita: false };
+      App.stoeckCardsPlayed = { Jan: 0, Rita: 0 };
+      App.stoeckAnnounced = { Jan: false, Rita: false };
+
+      App.userReady = false;
+      App.oppReady = false;
+
+      App.userChosenWeisList = [];
+      App.oppChosenWeisList = [];
+
+      sortHand(App.myHand);
+      renderAll();
+
+      if (App.gameMode === 'online' && App.isHost) {
+        sendNet({
+          type: 'SYNC_ROUND',
+          trumpCard: App.trumpCard,
+          trumpSuit: App.trumpSuit,
+          activeModeId: App.activeModeId,
+          clientHand: App.oppHand,
+          clientReserve: App.oppReserve,
+          dealer: App.dealer,
+          currentTurn: App.currentTurn
+        });
+      }
+
+      if (App.gameMode === 'bot') {
+        botDoSwap();
+      }
+    }
+
+    function sortHand(hand) {
+      hand.sort((a, b) => {
+        const orderA = SUIT_SORT_ORDER[a.suitId] || 99;
+        const orderB = SUIT_SORT_ORDER[b.suitId] || 99;
+        if (orderA !== orderB) return orderA - orderB;
+        return b.order - a.order;
+      });
+    }
+
+    function resetTeppichView() {
+      const trumpBox = document.getElementById('trump-prep-box');
+      const reserveBox = document.getElementById('reserve-prep-box');
+      const mat = document.getElementById('teppich-mat');
+      const pill = document.getElementById('discreet-trump-pill');
+
+      if (trumpBox) trumpBox.classList.remove('collapsed');
+      if (reserveBox) reserveBox.classList.remove('collapsed');
+      if (mat) mat.classList.remove('jass-teppich');
+      if (pill) pill.classList.add('hidden');
+    }
+
+    function triggerTeppichTransition(onComplete) {
+      App.phase = 'ANIMATING';
+      Sound.teppich();
+
+      const trumpBox = document.getElementById('trump-prep-box');
+      const reserveBox = document.getElementById('reserve-prep-box');
+      const mat = document.getElementById('teppich-mat');
+      const pill = document.getElementById('discreet-trump-pill');
+
+      if (trumpBox) trumpBox.classList.add('collapsed');
+      if (reserveBox) reserveBox.classList.add('collapsed');
+
+      setTimeout(() => {
+        if (mat) mat.classList.add('jass-teppich');
+        
+        if (pill) {
+          pill.classList.remove('hidden');
+          const iconEl = document.getElementById('hud-trump-icon');
+          if (iconEl) iconEl.innerHTML = SVG_ICONS[App.trumpCard.suitId] || '';
+          const nameEl = document.getElementById('hud-trump-name');
+          if (nameEl) nameEl.textContent = getSuitName(App.trumpCard.suitId);
+          const modeEl = document.getElementById('hud-mode-value');
+          if (modeEl) modeEl.textContent = getModeSimpleNumber(App.activeModeId);
+        }
+
+        checkStoeckInitialHolders();
+
+        setTimeout(() => {
+          App.phase = 'PLAY';
+          App.isProcessingMove = false;
+          renderAll();
+          if (onComplete) onComplete();
+        }, 400);
+      }, 350);
+    }
+
+    function checkStoeckInitialHolders() {
+      const janHasK = App.myHand.some(c => c.suitId === App.trumpSuit && c.rankId === 'koenig');
+      const janHasD = App.myHand.some(c => c.suitId === App.trumpSuit && c.rankId === 'ober');
+      App.stoeckOriginalHolders[App.user] = (janHasK && janHasD);
+
+      const ritaHasK = App.oppHand.some(c => c.suitId === App.trumpSuit && c.rankId === 'koenig');
+      const ritaHasD = App.oppHand.some(c => c.suitId === App.trumpSuit && c.rankId === 'ober');
+      App.stoeckOriginalHolders[App.opponent] = (ritaHasK && ritaHasD);
+    }
+
+    /* =========================================================================
+       REIHENFOLGE: 4 KARTEN TAUSCHEN
+       ========================================================================= */
+    function toggleCardForSwap(cardId) {
+      if (App.phase !== 'STEP_SWAP4') return;
+      const idx = App.selectedSwapCards.indexOf(cardId);
+      if (idx > -1) {
+        App.selectedSwapCards.splice(idx, 1);
+      } else {
+        if (App.selectedSwapCards.length >= 4) return;
+        App.selectedSwapCards.push(cardId);
+      }
+      Sound.beep(320, 0.04);
+      renderMyHand();
+      updateStepsUI();
+    }
+
+    function executeCardSwap() {
+      if (App.selectedSwapCards.length !== 4) return;
+
+      const kept = App.myHand.filter(c => !App.selectedSwapCards.includes(c.id));
+      App.myHand = [...kept, ...App.myReserve];
+      App.myReserve = [];
+      App.selectedSwapCards = [];
+
+      sortHand(App.myHand);
+      Sound.swap();
+      const countLbl = document.getElementById('reserve-count-label');
+      if (countLbl) countLbl.textContent = '0';
+
+      proceedToStepTrumpSwap();
+    }
+
+    function proceedToStepTrumpSwap() {
+      let neededRank = null;
+      if (App.activeModeId === 'NULLER') neededRank = 'under';
+      if (App.activeModeId === '100')    neededRank = '6';
+
+      const hasMatch = neededRank && !App.trumpExchanged && App.myHand.some(c => c.suitId === App.trumpSuit && c.rankId === neededRank);
+
+      if (hasMatch) {
+        App.phase = 'STEP_TRUMP_SWAP';
+        const rankName = neededRank === 'under' ? 'Trumpf-Bauer' : 'Trumpf-6';
+        const descEl = document.getElementById('step-trump-desc');
+        if (descEl) descEl.textContent = `Du hältst den ${rankName}!`;
+        const actBtn = document.getElementById('btn-trump-swap-action');
+        if (actBtn) actBtn.textContent = `${rankName} tauschen ⇄`;
+        updateStepsUI();
+        renderAll();
+      } else {
+        proceedToStepWeis();
+      }
+    }
+
+    function executeTrumpSwapStep() {
+      const neededRank = App.activeModeId === 'NULLER' ? 'under' : '6';
+      const idx = App.myHand.findIndex(c => c.suitId === App.trumpSuit && c.rankId === neededRank);
+      if (idx !== -1) {
+        const cardOnHand = App.myHand[idx];
+        const cardOnTable = App.trumpCard;
+        App.myHand[idx] = cardOnTable;
+        App.trumpCard = cardOnHand;
+        App.trumpExchanged = true;
+
+        sortHand(App.myHand);
+        Sound.win();
+        showTrickToast("Trumpfkarte getauscht!");
+
+        if (App.gameMode === 'online') {
+          sendNet({ type: 'TRUMP_SWAPPED', card: cardOnHand });
+        }
+      }
+      proceedToStepWeis();
+    }
+
+    function skipTrumpSwapStep() {
+      proceedToStepWeis();
+    }
+
+    function proceedToStepWeis() {
+      const groups = generateTacticalWeisGroups(App.myHand, App.trumpSuit);
+
+      if (groups.length > 0) {
+        App.phase = 'STEP_WEIS';
+        updateStepsUI();
+        renderAll();
+        openWeisSelectionDialog();
+      } else {
+        App.userChosenWeisList = [];
+        proceedToStepReady();
+      }
+    }
+
+    function proceedToStepReady() {
+      App.phase = 'STEP_READY';
+      const btn = document.getElementById('btn-give-ready');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "👍 Bereit (OK)";
+      }
+      const txt = document.getElementById('ready-status-text');
+      if (txt) txt.textContent = "Weis gewählt oder direkt OK geben.";
+      updateStepsUI();
+      renderAll();
+    }
+
+    function giveReady() {
+      App.userReady = true;
+      const btn = document.getElementById('btn-give-ready');
+      if (btn) {
+        btn.textContent = "Bereit ✓";
+        btn.disabled = true;
+      }
+
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'PARTNER_READY', weises: App.userChosenWeisList });
+      }
+
+      checkBothReadyToPlay();
+    }
+
+    function checkBothReadyToPlay() {
+      if (!App.userReady) return;
+      if (App.gameMode === 'online' && !App.oppReady) {
+        const txt = document.getElementById('ready-status-text');
+        if (txt) txt.textContent = "Warten auf OK...";
+        showTrickToast("Warten auf OK von deiner Spielpartnerin...");
+        return;
+      }
+
+      resolveWeisDuel();
+    }
+
+    function updateStepsUI() {
+      const swap4Bar = document.getElementById('step-swap4-bar');
+      const trumpBar = document.getElementById('step-trump-swap-bar');
+      const readyBar = document.getElementById('step-ready-bar');
+
+      if (swap4Bar) swap4Bar.classList.add('hidden');
+      if (trumpBar) trumpBar.classList.add('hidden');
+      if (readyBar) readyBar.classList.add('hidden');
+
+      if (App.phase === 'STEP_SWAP4') {
+        if (swap4Bar) {
+          swap4Bar.classList.remove('hidden');
+          const count = App.selectedSwapCards.length;
+          const counterEl = document.getElementById('swap-counter');
+          if (counterEl) counterEl.textContent = `${count}/4`;
+          const execBtn = document.getElementById('btn-execute-swap');
+          if (execBtn) execBtn.disabled = count !== 4;
+        }
+      } else if (App.phase === 'STEP_TRUMP_SWAP') {
+        if (trumpBar) trumpBar.classList.remove('hidden');
+      } else if (App.phase === 'STEP_WEIS' || App.phase === 'STEP_READY') {
+        if (readyBar) readyBar.classList.remove('hidden');
+      }
+    }
+
+    function botDoSwap() {
+      const sorted = [...App.oppHand].sort((a,b) => {
+        if (a.suitId === App.trumpSuit) return 1;
+        if (b.suitId === App.trumpSuit) return -1;
+        return a.order - b.order;
+      });
+      const discardedIds = sorted.slice(0, 4).map(c => c.id);
+      App.oppHand = [...App.oppHand.filter(c => !discardedIds.includes(c.id)), ...App.oppReserve];
+      App.oppReserve = [];
+
+      if (!App.trumpExchanged) {
+        if (App.activeModeId === 'NULLER') {
+          const bIdx = App.oppHand.findIndex(c => c.suitId === App.trumpSuit && c.rankId === 'under');
+          if (bIdx > -1) {
+            const bCard = App.oppHand[bIdx];
+            App.oppHand[bIdx] = App.trumpCard;
+            App.trumpCard = bCard;
+            App.trumpExchanged = true;
+          }
+        } else if (App.activeModeId === '100') {
+          const sIdx = App.oppHand.findIndex(c => c.suitId === App.trumpSuit && c.rankId === '6');
+          if (sIdx > -1 && App.trumpCard.order > 8) {
+            const sCard = App.oppHand[sIdx];
+            App.oppHand[sIdx] = App.trumpCard;
+            App.trumpCard = sCard;
+            App.trumpExchanged = true;
+          }
+        }
+      }
+
+      const botDecision = botChooseSmartWeis(App.oppHand, App.trumpSuit, App.activeModeId);
+      App.oppChosenWeisList = botDecision;
+      App.oppReady = true;
+    }
+
+    /* =========================================================================
+       BOT WEIS-INTELLIGENZ
+       ========================================================================= */
+    function botChooseSmartWeis(hand, trumpSuit, modeId) {
+      const groups = generateTacticalWeisGroups(hand, trumpSuit);
+      if (modeId === 'NULLER') return [];
+
+      let chosen = [];
+      // 50er-Spiel: Weist NIEMALS 50! Nur maximal 20 oder 0 Punkte!
+      if (modeId === '50') {
+        let currentTotal = 0;
+        groups.forEach(g => {
+          const safeOpts = g.options.filter(o => o.pts > 0 && o.pts <= 20 && (currentTotal + o.pts <= 25));
+          if (safeOpts.length > 0) {
+            const best = safeOpts[0];
+            chosen.push(best);
+            currentTotal += best.pts;
+          }
+        });
+        return chosen;
+      }
+
+      // 100er-Spiel: Höchstens 20 Punkte weisen, um nicht zu ersaufen!
+      if (modeId === '100') {
+        let currentTotal = 0;
+        groups.forEach(g => {
+          const safeOpts = g.options.filter(o => o.pts > 0 && o.pts <= 20 && (currentTotal + o.pts <= 20));
+          if (safeOpts.length > 0) {
+            const best = safeOpts[0];
+            chosen.push(best);
+            currentTotal += best.pts;
+          }
+        });
+        return chosen;
+      }
+
+      return [];
+    }
+
+    /* =========================================================================
+       MEHRFACH-WEIS-ENGINE (FARBEN-GRUPPIERUNG & UNTERWEISEN)
+       ========================================================================= */
+    function generateTacticalWeisGroups(hand, trumpSuit) {
+      let groups = [];
+
+      const bySuit = {};
+      hand.forEach(c => {
+        if (!bySuit[c.suitId]) bySuit[c.suitId] = [];
+        bySuit[c.suitId].push(c);
+      });
+
+      for (const s in bySuit) {
+        const sorted = bySuit[s].sort((a,b) => a.order - b.order);
+        let runs = [];
+        let currentRun = [sorted[0]];
+
+        for (let i = 1; i < sorted.length; i++) {
+          if (sorted[i].order === sorted[i-1].order + 1) {
+            currentRun.push(sorted[i]);
+          } else {
+            if (currentRun.length >= 3) runs.push(currentRun);
+            currentRun = [sorted[i]];
+          }
+        }
+        if (currentRun.length >= 3) runs.push(currentRun);
+
+        runs.forEach((run, rIdx) => {
+          const maxLen = run.length;
+          const isTrump = (s === trumpSuit);
+          const suitNameDisplay = getSuitName(s);
+
+          let groupOptions = [];
+
+          for (let len = maxLen; len >= 3; len--) {
+            let pts = 20;
+            if (len === 3) pts = 20;
+            else if (len === 4) pts = 50;
+            else if (len === 5) pts = 100;
+            else if (len === 6) pts = 150;
+            else if (len === 7) pts = 200;
+            else if (len === 8) pts = 250;
+            else if (len >= 9) pts = 300;
+
+            const subCards = run.slice(run.length - len);
+            const topCard = subCards[subCards.length - 1];
+
+            groupOptions.push({
+              id: `weis_${s}_${len}_${rIdx}`,
+              groupId: `group_${s}_${rIdx}`,
+              suitId: s,
+              pts: pts,
+              length: len,
+              topRankOrder: topCard.order,
+              topRankLabel: topCard.rankLabel,
+              isTrump: isTrump,
+              name: `${len}-Blatt in ${suitNameDisplay} (${topCard.rankLabel}-hoch)`,
+              ptsLabel: `+${pts} Pkt`,
+              cards: subCards
+            });
+          }
+
+          groupOptions.push({
+            id: `none_${s}_${rIdx}`,
+            groupId: `group_${s}_${rIdx}`,
+            pts: 0,
+            name: `Kein Weis in ${suitNameDisplay}`,
+            ptsLabel: `0 Pkt`,
+            cards: []
+          });
+
+          groups.push({
+            groupId: `group_${s}_${rIdx}`,
+            title: `${suitNameDisplay}`,
+            icon: SVG_ICONS[s] || '',
+            isTrump: isTrump,
+            options: groupOptions
+          });
+        });
+      }
+
+      const byRank = {};
+      hand.forEach(c => {
+        if (!byRank[c.rankId]) byRank[c.rankId] = [];
+        byRank[c.rankId].push(c);
+      });
+
+      for (const r in byRank) {
+        if (byRank[r].length === 4) {
+          let pts = 0;
+          let label = "";
+          if (r === 'under') { pts = 200; label = '4 Bauern'; }
+          else if (r === '9') { pts = 150; label = '4 Neunen'; }
+          else if (['10', 'ober', 'koenig', 'ass'].includes(r)) {
+            pts = 100;
+            const names = { '10': '10er', 'ober': 'Damen', 'koenig': 'Könige', 'ass': 'Asse' };
+            label = `4 ${names[r]}`;
+          }
+
+          if (pts > 0) {
+            groups.push({
+              groupId: `group_4same_${r}`,
+              title: `${label}`,
+              icon: '🂠',
+              isTrump: false,
+              options: [
+                {
+                  id: `4same_${r}`,
+                  groupId: `group_4same_${r}`,
+                  suitId: 'all',
+                  pts: pts,
+                  length: 4,
+                  topRankOrder: byRank[r][0].order,
+                  topRankLabel: byRank[r][0].rankLabel,
+                  isTrump: false,
+                  name: `${label} aller 4 Farben`,
+                  ptsLabel: `+${pts} Pkt`,
+                  cards: byRank[r]
+                },
+                {
+                  id: `none_4same_${r}`,
+                  groupId: `group_4same_${r}`,
+                  pts: 0,
+                  name: `Nicht weisen`,
+                  ptsLabel: `0 Pkt`,
+                  cards: []
+                }
+              ]
+            });
+          }
+        }
+      }
+
+      return groups;
+    }
+
+    function openWeisSelectionDialog() {
+      const groups = generateTacticalWeisGroups(App.myHand, App.trumpSuit);
+      App.availableWeisGroups = groups;
+
+      const modal = document.getElementById('weis-select-modal');
+      const container = document.getElementById('weis-groups-container');
+      const pill = document.getElementById('modal-mode-pill');
+      if (pill) pill.textContent = `Ziel: ${getModeSimpleNumber(App.activeModeId)}`;
+
+      if (container) {
+        container.innerHTML = '';
+        if (groups.length > 0) {
+          groups.forEach((grp) => {
+            const grpEl = document.createElement('div');
+            grpEl.className = 'p-2 rounded-2xl apple-panel border border-white/10 text-left';
+
+            let optsHtml = '';
+            grp.options.forEach((opt, oIdx) => {
+              const isChecked = (oIdx === 0);
+              optsHtml += `
+                <label class="flex items-center justify-between p-1 rounded-xl hover:bg-white/10 cursor-pointer text-xs transition-colors"
+                       onmouseenter="highlightWeisCards('${opt.id}')" onmouseleave="clearWeisHighlight()">
+                  <div class="flex items-center gap-2">
+                    <input type="radio" name="${grp.groupId}" value="${opt.id}" onchange="updateWeisLiveTotal()" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 accent-sky-400">
+                    <span class="${opt.pts > 0 ? 'text-white font-semibold' : 'text-slate-400'}">${opt.name}</span>
+                  </div>
+                  <span class="text-xs font-black ${opt.pts > 0 ? 'text-sky-400' : 'text-slate-500'}">${opt.ptsLabel}</span>
+                </label>
+              `;
+            });
+
+            grpEl.innerHTML = `
+              <div class="flex items-center justify-between mb-1 pb-1 border-b border-white/10">
+                <div class="font-extrabold text-xs text-amber-300 flex items-center gap-1.5">
+                  <span class="w-3.5 h-3.5 inline-block">${grp.icon}</span>
+                  <span>${grp.title}</span>
+                  ${grp.isTrump ? '<span class="text-[8px] bg-amber-400 text-slate-950 px-1 rounded font-black">TRUMPF</span>' : ''}
+                </div>
+              </div>
+              <div class="space-y-0.5">${optsHtml}</div>
+            `;
+            container.appendChild(grpEl);
+          });
+        } else {
+          container.innerHTML = `<div class="text-xs text-slate-400 italic p-3 text-center">Keine Weisen auf der Hand.</div>`;
+        }
+      }
+
+      updateWeisLiveTotal();
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function highlightWeisCards(optId) {
+      clearWeisHighlight();
+      if (!App.availableWeisGroups) return;
+      for (const grp of App.availableWeisGroups) {
+        const opt = grp.options.find(o => o.id === optId);
+        if (opt && opt.cards && opt.cards.length > 0) {
+          opt.cards.forEach(c => {
+            const el = document.querySelector(`[data-card-id="${c.id}"]`);
+            if (el) el.classList.add('weis-highlight');
+          });
+          break;
+        }
+      }
+    }
+
+    function clearWeisHighlight() {
+      document.querySelectorAll('.weis-highlight').forEach(el => el.classList.remove('weis-highlight'));
+    }
+
+    function updateWeisLiveTotal() {
+      let total = 0;
+      if (App.availableWeisGroups) {
+        App.availableWeisGroups.forEach(grp => {
+          const checked = document.querySelector(`input[name="${grp.groupId}"]:checked`);
+          if (checked) {
+            const opt = grp.options.find(o => o.id === checked.value);
+            if (opt && opt.pts > 0) total += opt.pts;
+          }
+        });
+      }
+      const totalEl = document.getElementById('weis-live-total');
+      if (totalEl) totalEl.textContent = `+${total} Pkt`;
+      const confirmBtn = document.getElementById('btn-confirm-multi-weis');
+      if (confirmBtn) confirmBtn.textContent = `Deklarieren (+${total} Pkt) ➔`;
+    }
+
+    function confirmWeisSelection() {
+      let chosen = [];
+      if (App.availableWeisGroups) {
+        App.availableWeisGroups.forEach(grp => {
+          const checked = document.querySelector(`input[name="${grp.groupId}"]:checked`);
+          if (checked) {
+            const opt = grp.options.find(o => o.id === checked.value);
+            if (opt && opt.pts > 0) chosen.push(opt);
+          }
+        });
+      }
+
+      App.userChosenWeisList = chosen;
+      clearWeisHighlight();
+      const modal = document.getElementById('weis-select-modal');
+      if (modal) modal.classList.add('hidden');
+      
+      const totalPts = chosen.reduce((acc, c) => acc + c.pts, 0);
+      showTrickToast(totalPts > 0 ? `Weise gemeldet: +${totalPts} Pkt!` : "Auf Weisen verzichtet.");
+      proceedToStepReady();
+    }
+
+    function passWeisEntirely() {
+      App.userChosenWeisList = [];
+      clearWeisHighlight();
+      const modal = document.getElementById('weis-select-modal');
+      if (modal) modal.classList.add('hidden');
+      showTrickToast("Auf Weisen verzichtet.");
+      proceedToStepReady();
+    }
+
+    function compareWeis(w1, w2, isW1Vorhand) {
+      if (w1.pts !== w2.pts) return w1.pts - w2.pts;
+      if (w1.length !== w2.length) return w1.length - w2.length;
+      if (w1.topRankOrder !== w2.topRankOrder) return w1.topRankOrder - w2.topRankOrder;
+      if (w1.isTrump !== w2.isTrump) return w1.isTrump ? 1 : -1;
+      return isW1Vorhand ? 1 : -1;
+    }
+
+    function resolveWeisDuel() {
+      const myWeises = App.userChosenWeisList || [];
+      const oppWeises = App.oppChosenWeisList || [];
+
+      const isMeFirst = App.currentTurn === App.user;
+
+      const bestMe = myWeises.length > 0 ? [...myWeises].sort((a,b) => compareWeis(b, a, isMeFirst))[0] : null;
+      const bestOpp = oppWeises.length > 0 ? [...oppWeises].sort((a,b) => compareWeis(b, a, !isMeFirst))[0] : null;
+
+      let weisWinner = null;
+      let outcomeText = "";
+
+      if (bestMe && bestOpp) {
+        const diff = compareWeis(bestMe, bestOpp, isMeFirst);
+        if (diff > 0) {
+          weisWinner = App.user;
+          outcomeText = `<b>${Profiles[App.user].name}</b> gewinnt das Duell mit <i>${bestMe.name}</i>!`;
+        } else {
+          weisWinner = App.opponent;
+          outcomeText = `<b>${Profiles[App.opponent].name}</b> gewinnt das Duell mit <i>${bestOpp.name}</i>!`;
+        }
+      } else if (bestMe && !bestOpp) {
+        weisWinner = App.user;
+        outcomeText = `<b>${Profiles[App.user].name}</b> weist ungeschlagen: <i>${bestMe.name}</i>!`;
+      } else if (!bestMe && bestOpp) {
+        weisWinner = App.opponent;
+        outcomeText = `<b>${Profiles[App.opponent].name}</b> weist ungeschlagen: <i>${bestOpp.name}</i>!`;
+      } else {
+        outcomeText = "Keine Weisen deklariert.";
+      }
+
+      let myTotalWeis = 0;
+      let oppTotalWeis = 0;
+
+      if (weisWinner === App.user) {
+        myWeises.forEach(w => myTotalWeis += w.pts);
+      } else if (weisWinner === App.opponent) {
+        oppWeises.forEach(w => oppTotalWeis += w.pts);
+      }
+
+      App.weisPoints[App.user] = myTotalWeis;
+      App.weisPoints[App.opponent] = oppTotalWeis;
+
+      if (myTotalWeis > 0 || oppTotalWeis > 0) {
+        Sound.weis();
+        const ptsMe = document.getElementById('weis-pts-me');
+        if (ptsMe) ptsMe.textContent = `+${myTotalWeis} Pkt`;
+        const ptsOpp = document.getElementById('weis-pts-opp');
+        if (ptsOpp) ptsOpp.textContent = `+${oppTotalWeis} Pkt`;
+        const outEl = document.getElementById('weis-duel-outcome');
+        if (outEl) outEl.innerHTML = outcomeText;
+
+        const listMe = document.getElementById('weis-list-me');
+        if (listMe) {
+          listMe.innerHTML = myWeises.length > 0 
+            ? myWeises.map(w => `<div class="flex justify-between"><span>${w.name}</span><b class="text-emerald-400">+${w.pts}</b></div>`).join('')
+            : '<span class="text-slate-400">Kein Weis</span>';
+        }
+
+        const listOpp = document.getElementById('weis-list-opp');
+        if (listOpp) {
+          listOpp.innerHTML = oppWeises.length > 0 
+            ? oppWeises.map(w => `<div class="flex justify-between"><span>${w.name}</span><b class="text-amber-400">+${w.pts}</b></div>`).join('')
+            : '<span class="text-slate-400">Kein Weis</span>';
+        }
+
+        const modal = document.getElementById('weis-modal');
+        if (modal) modal.classList.remove('hidden');
+      } else {
+        closeWeisModal();
+      }
+
+      renderHeaderScores();
+      checkEarlyEndOption();
+    }
+
+    function closeWeisModal() {
+      const modal = document.getElementById('weis-modal');
+      if (modal) modal.classList.add('hidden');
+      const stepReady = document.getElementById('step-ready-bar');
+      if (stepReady) stepReady.classList.add('hidden');
+
+      triggerTeppichTransition(() => {
+        if (App.currentTurn === App.opponent && App.gameMode === 'bot') {
+          setTimeout(botPlayCard, 750);
+        }
+      });
+    }
+
+    /* =========================================================================
+       STÖCK-PROMPT BEIM AUSSPIELEN DER 2. STÖCK-KARTE
+       ========================================================================= */
+    let pendingStoeckAction = null;
+
+    function checkStoeckOnCardPlay(player, card, onProceed) {
+      const isTrump = (card.suitId === App.trumpSuit);
+      const isKD = (card.rankId === 'koenig' || card.rankId === 'ober');
+
+      if (!isTrump || !isKD || !App.stoeckOriginalHolders[player]) {
+        onProceed();
+        return;
+      }
+
+      if (App.stoeckCardsPlayed[player] === 0) {
+        App.stoeckCardsPlayed[player] = 1;
+        onProceed();
+      } else if (App.stoeckCardsPlayed[player] === 1 && !App.stoeckAnnounced[player]) {
+        if (player === App.user) {
+          pendingStoeckAction = onProceed;
+          const modal = document.getElementById('stoeck-modal');
+          if (modal) modal.classList.remove('hidden');
+        } else {
+          const botAnnounce = botDecideStoeck();
+          if (botAnnounce) {
+            App.stoeckAnnounced[player] = true;
+            App.weisPoints[player] += 20;
+            Sound.weis();
+            showTrickToast(`👑 STÖCK! +20 Punkte für ${Profiles[player].name}!`);
+            renderHeaderScores();
+            checkEarlyEndOption();
+          }
+          App.stoeckCardsPlayed[player] = 2;
+          onProceed();
+        }
+      } else {
+        onProceed();
+      }
+    }
+
+    function confirmStoeckAnnouncement(wantsToAnnounce) {
+      const modal = document.getElementById('stoeck-modal');
+      if (modal) modal.classList.add('hidden');
+      if (!pendingStoeckAction) return;
+
+      const proceed = pendingStoeckAction;
+      pendingStoeckAction = null;
+
+      if (wantsToAnnounce) {
+        App.stoeckAnnounced[App.user] = true;
+        App.weisPoints[App.user] += 20;
+        Sound.weis();
+        showTrickToast(`👑 STÖCK! +20 Punkte für dich!`);
+        renderHeaderScores();
+        checkEarlyEndOption();
+
+        if (App.gameMode === 'online') {
+          sendNet({ type: 'STOECK_ANNOUNCED', player: App.user });
+        }
+      }
+
+      App.stoeckCardsPlayed[App.user] = 2;
+      proceed();
+    }
+
+    function botDecideStoeck() {
+      if (App.activeModeId === 'NULLER') return false;
+      const botTotal = App.cardPoints[App.opponent] + App.weisPoints[App.opponent];
+      if (App.activeModeId === '50') return (botTotal + 20 <= 55);
+      if (App.activeModeId === '100') return (botTotal + 20 <= 100);
+      return false;
+    }
+
+    function checkEarlyEndOption() {
+      if (App.activeModeId !== '100' || App.phase === 'ROUND_OVER') {
+        const bar = document.getElementById('early-end-bar');
+        if (bar) bar.classList.add('hidden');
+        return;
+      }
+
+      const totalJan = App.cardPoints[App.user] + App.weisPoints[App.user];
+      const totalRita = App.cardPoints[App.opponent] + App.weisPoints[App.opponent];
+
+      const bar = document.getElementById('early-end-bar');
+      if (bar) {
+        if (totalJan > 100 || totalRita > 100) {
+          bar.classList.remove('hidden');
+        } else {
+          bar.classList.add('hidden');
+        }
+      }
+    }
+
+    function triggerEarlyRoundEnd() {
+      if (App.gameMode === 'online') {
+        sendNet({ type: 'FORCE_END_ROUND' });
+      }
+      evaluateRoundEnd();
+    }
+
+    /* =========================================================================
+       1. STICH ANSCHAUEN (POPUP)
+       ========================================================================= */
+    function openFirstTrickModal() {
+      if (!App.firstTrickData) return;
+      const modal = document.getElementById('first-trick-modal');
+      const info = document.getElementById('first-trick-info');
+      const container = document.getElementById('first-trick-cards-container');
+
+      if (info) {
+        const winnerName = Profiles[App.firstTrickData.winner].name;
+        info.textContent = `Gewonnen von ${winnerName} (+${App.firstTrickData.pts} Punkte)`;
+      }
+
+      if (container) {
+        container.innerHTML = '';
+        App.firstTrickData.cards.forEach(c => {
+          const cardHtml = createCardHtml(c, 'w-20 sm:w-24 text-xs sm:text-sm');
+          container.innerHTML += cardHtml;
+        });
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFirstTrickModal() {
+      const modal = document.getElementById('first-trick-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    /* =========================================================================
+       AUSSPIELEN MIT ENTSPANNTEM TIMING & SPAM-SCHUTZ
+       ========================================================================= */
+    function onPlayerClickCard(card, cardEl) {
+      if (App.phase === 'STEP_SWAP4') {
+        toggleCardForSwap(card.id);
+        return;
+      }
+
+      if (App.phase === 'STEP_TRUMP_SWAP') {
+        showTrickToast("Tausche die Trumpfkarte oder klicke auf 'Weiter'!");
+        return;
+      }
+
+      if (App.phase === 'STEP_WEIS' || App.phase === 'STEP_READY') {
+        showTrickToast("Klicke zuerst auf 'Bereit (OK)', um zu spielen!");
+        return;
+      }
+
+      if (App.phase !== 'PLAY') return;
+
+      if (App.isProcessingMove) return;
+
+      if (App.currentTurn !== App.user) {
+        Sound.beep(200, 0.05);
+        showTrickToast(`${Profiles[App.opponent].name} ist noch am Zug!`);
+        return;
+      }
+
+      if (App.currentTrick.some(t => t.player === App.user)) {
+        return;
+      }
+
+      const playable = isCardPlayable(card, App.myHand, App.currentTrick);
+      if (!playable) {
+        Sound.beep(160, 0.1);
+        if (cardEl) {
+          cardEl.classList.add('shake-anim');
+          setTimeout(() => cardEl.classList.remove('shake-anim'), 360);
+        }
+        showTrickToast(`Farbzwang: Bitte ${getSuitName(App.currentTrick[0].card.suitId)} zugeben!`);
+        return;
+      }
+
+      App.isProcessingMove = true;
+
+      checkStoeckOnCardPlay(App.user, card, () => {
+        executePlayCard(App.user, card);
+        if (App.gameMode === 'online') {
+          sendNet({ type: 'CARD_PLAYED', player: App.user, card: card });
+        }
+      });
+    }
+
+    function executePlayCard(player, card) {
+      Sound.card();
+      App.firstCardPlayed = true;
+
+      if (player === App.user) {
+        App.myHand = App.myHand.filter(c => c.id !== card.id);
+      } else {
+        if (App.oppHand.length > 0 && App.oppHand[0].id) {
+          App.oppHand = App.oppHand.filter(c => c.id !== card.id);
+        } else {
+          App.oppHand.pop();
+        }
+      }
+
+      App.currentTrick.push({ player, card });
+      renderTrickSlot();
+      renderHands();
+
+      if (App.currentTrick.length === 1) {
+        App.currentTurn = (player === App.user) ? App.opponent : App.user;
+        App.isProcessingMove = false;
+        renderHeaderScores();
+
+        if (App.currentTurn === App.opponent && App.gameMode === 'bot') {
+          setTimeout(botPlayCard, 900);
+        }
+      } else if (App.currentTrick.length === 2) {
+        setTimeout(resolveCurrentTrick, 1350);
+      }
+    }
+
+    function resolveCurrentTrick() {
+      const c1 = App.currentTrick[0];
+      const c2 = App.currentTrick[1];
+
+      let winner = c1.player;
+
+      const c1Trump = c1.card.suitId === App.trumpSuit;
+      const c2Trump = c2.card.suitId === App.trumpSuit;
+
+      if (c1Trump && c2Trump) {
+        winner = getTrumpOrder(c2.card) > getTrumpOrder(c1.card) ? c2.player : c1.player;
+      } else if (c1Trump && !c2Trump) {
+        winner = c1.player;
+      } else if (!c1Trump && c2Trump) {
+        winner = c2.player;
+      } else {
+        if (c2.card.suitId === c1.card.suitId) {
+          winner = c2.card.order > c1.card.order ? c2.player : c1.player;
+        } else {
+          winner = c1.player;
+        }
+      }
+
+      let pts = getCardJassPoints(c1.card, c1Trump) + getCardJassPoints(c2.card, c2Trump);
+      if (App.myHand.length === 0 && App.oppHand.length === 0) {
+        pts += 5;
+      }
+
+      const totalTricksSoFar = App.trickCount.Jan + App.trickCount.Rita;
+      if (totalTricksSoFar === 0) {
+        App.firstTrickData = {
+          winner: winner,
+          cards: [c1.card, c2.card],
+          pts: pts
+        };
+      }
+
+      App.trickCount[winner]++;
+      App.cardPoints[winner] += pts;
+
+      Sound.trick();
+      showTrickToast(`${Profiles[winner].name} gewinnt Stich (+${pts} Pkt)`);
+
+      App.currentTrick = [];
+      App.currentTurn = winner;
+      App.isProcessingMove = false;
+
+      renderTrickSlot();
+      renderHeaderScores();
+      renderTrickPiles();
+      checkEarlyEndOption();
+
+      if (App.myHand.length === 0 && App.oppHand.length === 0) {
+        setTimeout(evaluateRoundEnd, 1000);
+      } else {
+        if (App.currentTurn === App.opponent && App.gameMode === 'bot') {
+          setTimeout(botPlayCard, 900);
+        }
+      }
+    }
+
+    function cardBeats(card, leadCard, trumpSuit) {
+      const cTrump = (card.suitId === trumpSuit);
+      const lTrump = (leadCard.suitId === trumpSuit);
+
+      if (cTrump && !lTrump) return true;
+      if (!cTrump && lTrump) return false;
+      if (cTrump && lTrump) {
+        return getTrumpOrder(card) > getTrumpOrder(leadCard);
+      }
+      if (card.suitId === leadCard.suitId) {
+        return card.order > leadCard.order;
+      }
+      return false;
+    }
+
+    function botPlayCard() {
+      if (App.phase !== 'PLAY' || App.currentTurn !== App.opponent) return;
+
+      const validCards = App.oppHand.filter(c => isCardPlayable(c, App.oppHand, App.currentTrick));
+      if (validCards.length === 0) return;
+
+      const chosenCard = chooseSmartBotCard(validCards);
+
+      checkStoeckOnCardPlay(App.opponent, chosenCard, () => {
+        executePlayCard(App.opponent, chosenCard);
+      });
+    }
+
+    function chooseSmartBotCard(validCards) {
+      const isLead = (App.currentTrick.length === 0);
+      const mode = App.activeModeId;
+      const botScore = App.cardPoints[App.opponent] + App.weisPoints[App.opponent];
+      const botTricks = App.trickCount[App.opponent];
+      const cardsLeft = App.oppHand.length;
+
+      if (isLead) {
+        if (mode === 'NULLER') {
+          if (botTricks === 0 && cardsLeft <= 4) {
+            return validCards.sort((a,b) => getCardJassPoints(b, b.suitId === App.trumpSuit) - getCardJassPoints(a, a.suitId === App.trumpSuit))[0];
+          }
+          const nonTrumps = validCards.filter(c => c.suitId !== App.trumpSuit);
+          if (nonTrumps.length > 0) return nonTrumps.sort((a,b) => a.order - b.order)[0];
+          return validCards.sort((a,b) => a.order - b.order)[0];
+        }
+
+        if (mode === '50') {
+          if (botScore < 38) {
+            const winners = validCards.filter(c => c.rankId === 'ass' || (c.suitId === App.trumpSuit && c.order >= 11));
+            if (winners.length > 0) return winners[0];
+          }
+          return validCards.sort((a,b) => a.order - b.order)[0];
+        }
+
+        if (mode === '100') {
+          if (botScore < 75) {
+            const winners = validCards.filter(c => (c.suitId === App.trumpSuit && c.rankId === 'under') || c.rankId === 'ass');
+            if (winners.length > 0) return winners[0];
+          } else {
+            const safeLows = validCards.filter(c => c.suitId !== App.trumpSuit && c.order <= 9);
+            if (safeLows.length > 0) return safeLows.sort((a,b) => a.order - b.order)[0];
+          }
+          return validCards.sort((a,b) => a.order - b.order)[0];
+        }
+      }
+
+      const leadCard = App.currentTrick[0].card;
+      const winningCards = validCards.filter(c => cardBeats(c, leadCard, App.trumpSuit));
+      const losingCards = validCards.filter(c => !cardBeats(c, leadCard, App.trumpSuit));
+      const leadPoints = getCardJassPoints(leadCard, leadCard.suitId === App.trumpSuit);
+
+      if (mode === 'NULLER') {
+        if (botTricks === 0) {
+          if (leadPoints === 0 && winningCards.length > 0) {
+            const zeroPointWins = winningCards.filter(c => getCardJassPoints(c, c.suitId === App.trumpSuit) === 0);
+            if (zeroPointWins.length > 0) return zeroPointWins.sort((a,b) => a.order - b.order)[0];
+          }
+          if (cardsLeft <= 3 && winningCards.length > 0) {
+            return winningCards.sort((a,b) => a.order - b.order)[0];
+          }
+        }
+
+        if (losingCards.length > 0) {
+          const highPointers = losingCards.filter(c => getCardJassPoints(c, false) >= 4);
+          if (highPointers.length > 0) {
+            return highPointers.sort((a,b) => getCardJassPoints(b, false) - getCardJassPoints(a, false))[0];
+          }
+          return losingCards.sort((a,b) => b.order - a.order)[0];
+        }
+        return winningCards.sort((a,b) => a.order - b.order)[0];
+      }
+
+      if (mode === '50') {
+        let bestCard = validCards[0];
+        let bestDeviation = 999;
+
+        validCards.forEach(card => {
+          const wins = cardBeats(card, leadCard, App.trumpSuit);
+          const trickPts = leadPoints + getCardJassPoints(card, card.suitId === App.trumpSuit);
+          const projectedScore = wins ? (botScore + trickPts) : botScore;
+          const dev = Math.abs(50 - projectedScore);
+
+          if (dev < bestDeviation) {
+            bestDeviation = dev;
+            bestCard = card;
+          }
+        });
+        return bestCard;
+      }
+
+      if (mode === '100') {
+        const safeWins = winningCards.filter(c => {
+          const pts = leadPoints + getCardJassPoints(c, c.suitId === App.trumpSuit);
+          return (botScore + pts) <= 100;
+        });
+
+        const janScore = App.cardPoints[App.user] + App.weisPoints[App.user];
+        if (janScore >= 85 && losingCards.length > 0) {
+          const killers = losingCards.filter(c => getCardJassPoints(c, false) >= 10);
+          if (killers.length > 0) return killers[0];
+        }
+
+        if (safeWins.length > 0) {
+          return safeWins.sort((a,b) => a.order - b.order)[0];
+        }
+        if (losingCards.length > 0) {
+          return losingCards.sort((a,b) => a.order - b.order)[0];
+        }
+      }
+
+      return validCards[0];
+    }
+
+    function isCardPlayable(card, hand, trick) {
+      if (trick.length === 0) return true;
+
+      const leadCard = trick[0].card;
+      const leadSuit = leadCard.suitId;
+      const isTrumpLead = leadSuit === App.trumpSuit;
+
+      if (isTrumpLead) {
+        const trumpsOnHand = hand.filter(c => c.suitId === App.trumpSuit);
+        const onlyJack = trumpsOnHand.length === 1 && trumpsOnHand[0].rankId === 'under';
+
+        if (onlyJack && card.rankId === 'under') return true;
+        if (onlyJack && card.suitId !== App.trumpSuit) return true;
+
+        if (trumpsOnHand.length > 0) {
+          return card.suitId === App.trumpSuit;
+        }
+        return true;
+      }
+
+      const hasLeadSuit = hand.some(c => c.suitId === leadSuit);
+      if (card.suitId === leadSuit) return true;
+
+      if (card.suitId === App.trumpSuit) {
+        const currentTrumpTrick = trick.find(t => t.card.suitId === App.trumpSuit);
+        if (currentTrumpTrick) {
+          const tableTrumpOrder = getTrumpOrder(currentTrumpTrick.card);
+          const myTrumpOrder = getTrumpOrder(card);
+          if (myTrumpOrder < tableTrumpOrder) {
+            const hasOnlyTrumps = hand.every(c => c.suitId === App.trumpSuit);
+            return hasOnlyTrumps;
+          }
+        }
+        return true;
+      }
+
+      return !hasLeadSuit;
+    }
+
+    function getTrumpOrder(card) {
+      if (card.rankId === 'under') return 100;
+      if (card.rankId === '9')     return 90;
+      return card.order;
+    }
+
+    function getCardJassPoints(card, isTrump) {
+      if (isTrump) {
+        if (card.rankId === 'under') return 20;
+        if (card.rankId === '9')     return 14;
+        if (card.rankId === 'ass')   return 11;
+        if (card.rankId === 'koenig')return 4;
+        if (card.rankId === 'ober')  return 3;
+        if (card.rankId === '10')    return 10;
+        return 0;
+      } else {
+        if (card.rankId === 'ass')   return 11;
+        if (card.rankId === 'koenig')return 4;
+        if (card.rankId === 'ober')  return 3;
+        if (card.rankId === 'under') return 2;
+        if (card.rankId === '10')    return 10;
+        return 0;
+      }
+    }
+
+    function getModeSimpleNumber(id) {
+      if (id === 'NULLER') return "0";
+      if (id === '50')     return "50";
+      return "100";
+    }
+
+    /* WORDING: ERSOFFEN BEI ÜBER 100 PUNKTEN */
+    function evaluateRoundEnd() {
+      App.phase = 'ROUND_OVER';
+      const earlyBar = document.getElementById('early-end-bar');
+      if (earlyBar) earlyBar.classList.add('hidden');
+
+      const totalMe = App.cardPoints[App.user] + App.weisPoints[App.user];
+      const totalOpp = App.cardPoints[App.opponent] + App.weisPoints[App.opponent];
+
+      let winner = null;
+      let reason = "";
+
+      if (App.activeModeId === 'NULLER') {
+        const myTricks = App.trickCount[App.user];
+        const oppTricks = App.trickCount[App.opponent];
+
+        if (myTricks === 0 && oppTricks > 0) {
+          winner = App.opponent;
+          reason = `${Profiles[App.user].name} hat keinen einzigen Stich gemacht und verliert automatisch!`;
+        } else if (oppTricks === 0 && myTricks > 0) {
+          winner = App.user;
+          reason = `${Profiles[App.opponent].name} hat keinen einzigen Stich gemacht und verliert automatisch!`;
+        } else {
+          if (totalMe < totalOpp) {
+            winner = App.user;
+            reason = `${Profiles[App.user].name} hat weniger Punkte (${totalMe} zu ${totalOpp})!`;
+          } else if (totalOpp < totalMe) {
+            winner = App.opponent;
+            reason = `${Profiles[App.opponent].name} hat weniger Punkte (${totalOpp} zu ${totalMe})!`;
+          } else {
+            reason = `Unentschieden mit je ${totalMe} Punkten!`;
+          }
+        }
+      } else if (App.activeModeId === '50') {
+        const diffMe = Math.abs(50 - totalMe);
+        const diffOpp = Math.abs(50 - totalOpp);
+
+        if (diffMe < diffOpp) {
+          winner = App.user;
+          reason = `${Profiles[App.user].name} ist näher an 50 Punkten (${totalMe} Pkt, Diff: ${diffMe})!`;
+        } else if (diffOpp < diffMe) {
+          winner = App.opponent;
+          reason = `${Profiles[App.opponent].name} ist näher an 50 Punkten (${totalOpp} Pkt, Diff: ${diffOpp})!`;
+        } else {
+          reason = `Beide exakt gleich nah an 50 Punkten (${totalMe} : ${totalOpp})!`;
+        }
+      } else {
+        if (totalMe > 100 && totalOpp <= 100) {
+          winner = App.opponent;
+          reason = `${Profiles[App.user].name} hat über 100 Punkte (${totalMe}) und ist ersoffen!`;
+        } else if (totalOpp > 100 && totalMe <= 100) {
+          winner = App.user;
+          reason = `${Profiles[App.opponent].name} hat über 100 Punkte (${totalOpp}) und ist ersoffen!`;
+        } else if (totalMe > 100 && totalOpp > 100) {
+          winner = totalMe < totalOpp ? App.user : App.opponent;
+          reason = `Beide über 100 und ersoffen! ${Profiles[winner].name} hat weniger überworfen.`;
+        } else {
+          if (totalMe > totalOpp) {
+            winner = App.user;
+            reason = `${Profiles[App.user].name} ist näher an 100 Punkten (${totalMe} zu ${totalOpp})!`;
+          } else if (totalOpp > totalMe) {
+            winner = App.opponent;
+            reason = `${Profiles[App.opponent].name} ist näher an 100 Punkten (${totalOpp} zu ${totalMe})!`;
+          } else {
+            reason = `Gleichstand mit ${totalMe} Punkten!`;
+          }
+        }
+      }
+
+      const modal = document.getElementById('result-modal');
+      const icon = document.getElementById('result-icon');
+      const title = document.getElementById('result-title');
+      const desc = document.getElementById('result-desc');
+
+      if (winner === App.user) {
+        if (icon) icon.textContent = "🏆";
+        if (title) title.textContent = `Gratulation ${Profiles[App.user].name}!`;
+        Sound.win();
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        }
+      } else if (winner === App.opponent) {
+        if (icon) icon.textContent = "🥈";
+        if (title) title.textContent = `${Profiles[App.opponent].name} gewinnt!`;
+      } else {
+        if (icon) icon.textContent = "🤝";
+        if (title) title.textContent = "Unentschieden!";
+      }
+
+      if (desc) {
+        desc.innerHTML = `
+          <div class="mb-2 font-bold text-amber-300">${reason}</div>
+          <div class="apple-panel p-2.5 rounded-2xl text-left text-xs space-y-1">
+            <div><b>Modus:</b> Ziel ${getModeSimpleNumber(App.activeModeId)}</div>
+            <div><b>${Profiles[App.user].name}:</b> ${App.cardPoints[App.user]} Stiche + ${App.weisPoints[App.user]} Weis = <b>${totalMe} Pkt</b></div>
+            <div><b>${Profiles[App.opponent].name}:</b> ${App.cardPoints[App.opponent]} Stiche + ${App.weisPoints[App.opponent]} Weis = <b>${totalOpp} Pkt</b></div>
+          </div>
+        `;
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function renderAll() {
+      updateLabels();
+      renderTrumpSlot();
+      renderHands();
+      renderTrickSlot();
+      renderHeaderScores();
+      renderTrickPiles();
+      updateStepsUI();
+
+      if (App.phase === 'PLAY' || App.phase === 'ANIMATING') {
+        const pill = document.getElementById('discreet-trump-pill');
+        if (pill) {
+          pill.classList.remove('hidden');
+          const iconEl = document.getElementById('hud-trump-icon');
+          if (iconEl) iconEl.innerHTML = SVG_ICONS[App.trumpCard.suitId] || '';
+          const nameEl = document.getElementById('hud-trump-name');
+          if (nameEl) nameEl.textContent = getSuitName(App.trumpCard.suitId);
+          const modeEl = document.getElementById('hud-mode-value');
+          if (modeEl) modeEl.textContent = getModeSimpleNumber(App.activeModeId);
+        }
+      }
+    }
+
+    function renderTrickPiles() {
+      const myCount = App.trickCount[App.user];
+      const oppCount = App.trickCount[App.opponent];
+
+      const renderGraphic = (containerId, count) => {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.innerHTML = '';
+        const cardsToShow = Math.min(count, 3);
+        for (let i = 0; i < cardsToShow; i++) {
+          const cardEl = document.createElement('div');
+          cardEl.className = 'w-3 h-4.5 rounded-[3px] card-back-swiss shadow-sm';
+          c.appendChild(cardEl);
+        }
+      };
+
+      renderGraphic('my-pile-graphic', myCount);
+      renderGraphic('opp-pile-graphic', oppCount);
+
+      const updateStatusText = (id, count) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = `${count} ${count === 1 ? 'Stich' : 'Stiche'}`;
+      };
+
+      updateStatusText('my-stiche-status', myCount);
+      updateStatusText('opp-stiche-status', oppCount);
+
+      const hasFirstTrick = (App.firstTrickData && App.firstTrickData.winner === App.user);
+      const viewFirstBtn = document.getElementById('btn-view-first-trick');
+      if (viewFirstBtn) viewFirstBtn.classList.toggle('hidden', !hasFirstTrick);
+    }
+
+    function renderHeaderScores() {
+      const scoreMeEl = document.getElementById('score-me');
+      const scoreOppEl = document.getElementById('score-opp');
+      const blindIcon = document.getElementById('blind-icon');
+      const blindLabel = document.getElementById('blind-label');
+      const units = document.querySelectorAll('.score-unit');
+
+      if (App.hideScores) {
+        if (scoreMeEl) scoreMeEl.textContent = "???";
+        if (scoreOppEl) scoreOppEl.textContent = "???";
+        if (blindIcon) blindIcon.textContent = "🙈";
+        if (blindLabel) blindLabel.textContent = "Verdeckt";
+        units.forEach(u => u.classList.add('hidden'));
+      } else {
+        if (scoreMeEl) scoreMeEl.textContent = App.cardPoints[App.user] + App.weisPoints[App.user];
+        if (scoreOppEl) scoreOppEl.textContent = App.cardPoints[App.opponent] + App.weisPoints[App.opponent];
+        if (blindIcon) blindIcon.textContent = "👁️";
+        if (blindLabel) blindLabel.textContent = "Offen";
+        units.forEach(u => u.classList.remove('hidden'));
+      }
+
+      const oppCards = document.getElementById('opp-card-count');
+      if (oppCards) oppCards.textContent = App.oppHand.length;
+
+      const isMyTurn = (App.phase === 'PLAY' && App.currentTurn === App.user);
+      const isOppTurn = (App.phase === 'PLAY' && App.currentTurn === App.opponent);
+
+      const toggleInd = (id, cond) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', !cond);
+      };
+
+      toggleInd('opp-turn-indicator', isOppTurn);
+
+      const badge = document.getElementById('my-turn-status-badge');
+      if (badge) {
+        if (isMyTurn) {
+          badge.className = "px-2 py-0.2 rounded-full bg-emerald-400 text-slate-950 font-black text-[9px] animate-pulse";
+          badge.textContent = "Du bist dran";
+        } else {
+          badge.className = "px-2 py-0.2 rounded-full bg-slate-800 text-slate-300 font-bold text-[9px] border border-white/10";
+          badge.textContent = "Warten...";
+        }
+      }
+
+      // WÄHREND DES SPIELS: HUDS DEZENT & KOMPAKT HALTEN
+      const oppHud = document.getElementById('opp-player-hud');
+      const myHud = document.getElementById('my-player-hud');
+      if (App.phase === 'PLAY') {
+        if (oppHud) oppHud.classList.add('opacity-90', 'scale-95');
+        if (myHud) myHud.classList.add('opacity-95', 'scale-95');
+      } else {
+        if (oppHud) oppHud.classList.remove('opacity-90', 'scale-95');
+        if (myHud) myHud.classList.remove('opacity-95', 'scale-95');
+      }
+    }
+
+    function renderTrumpSlot() {
+      const slot = document.getElementById('trump-card-slot');
+      if (!slot) return;
+      if (!App.trumpCard) {
+        slot.innerHTML = `<span class="text-xs text-slate-400">Leer</span>`;
+        return;
+      }
+      slot.innerHTML = createCardHtml(App.trumpCard, 'w-13 sm:w-16 text-xs sm:text-sm');
+      const numEl = document.getElementById('decisive-mode-number');
+      if (numEl) numEl.textContent = getModeSimpleNumber(App.activeModeId);
+    }
+
+    function renderHands() {
+      renderMyHand();
+      renderOppHand();
+    }
+
+    function renderMyHand() {
+      const container = document.getElementById('my-cards-row');
+      if (!container) return;
+      container.innerHTML = '';
+
+      App.myHand.forEach(card => {
+        const isSwapSelected = App.selectedSwapCards.includes(card.id);
+        const cardEl = document.createElement('div');
+        let classes = `jass-card card-ratio relative flex flex-col justify-between p-1 select-none w-12 sm:w-16 md:w-20 text-[11px] sm:text-xs md:text-sm `;
+        
+        if (isSwapSelected) classes += 'selected-for-swap ';
+        cardEl.className = classes;
+        cardEl.style.color = card.suitColor;
+        cardEl.style.border = `2px solid ${card.suitId === App.trumpSuit ? '#f59e0b' : '#cbd5e1'}`;
+        cardEl.dataset.cardId = card.id;
+
+        cardEl.onclick = () => onPlayerClickCard(card, cardEl);
+
+        const iconSvg = SVG_ICONS[card.suitId] || '';
+
+        cardEl.innerHTML = `
+          <div class="flex justify-between items-center font-black leading-none">
+            <span class="tracking-tight">${card.short}</span>
+            <span class="w-3 h-3 sm:w-3.5 sm:h-3.5">${iconSvg}</span>
+          </div>
+          <div class="w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 mx-auto my-auto drop-shadow-sm">
+            ${iconSvg}
+          </div>
+          <div class="flex justify-between items-center font-black leading-none rotate-180">
+            <span class="tracking-tight">${card.short}</span>
+            <span class="w-3 h-3 sm:w-3.5 sm:h-3.5">${iconSvg}</span>
+          </div>
+          ${card.suitId === App.trumpSuit ? '<div class="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-black rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 text-[8px] sm:text-[9px] flex items-center justify-center shadow">👑</div>' : ''}
+        `;
+
+        container.appendChild(cardEl);
+      });
+    }
+
+    function renderOppHand() {
+      const container = document.getElementById('opp-cards-row');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const count = App.oppHand.length;
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'w-9 sm:w-11 rounded-lg card-back-swiss shadow-md card-ratio';
+        container.appendChild(el);
+      }
+    }
+
+    function renderTrickSlot() {
+      const slotOpp = document.getElementById('trick-slot-opp');
+      const slotMe = document.getElementById('trick-slot-me');
+      if (!slotOpp || !slotMe) return;
+
+      const oppMove = App.currentTrick.find(t => t.player === App.opponent);
+      const myMove = App.currentTrick.find(t => t.player === App.user);
+
+      const bigCardWidth = 'w-20 sm:w-26 md:w-30 text-xs sm:text-sm md:text-base';
+      const placeholder = 'w-20 sm:w-26 md:w-30 rounded-2xl border-2 border-dashed border-white/10 card-ratio';
+
+      slotOpp.innerHTML = oppMove ? createCardHtml(oppMove.card, bigCardWidth, true) : `<div class="${placeholder}"></div>`;
+      slotMe.innerHTML = myMove ? createCardHtml(myMove.card, bigCardWidth, true) : `<div class="${placeholder}"></div>`;
+    }
+
+    function createCardHtml(card, widthClass, isBig = false) {
+      if (!card) return '';
+      const isTrump = card.suitId === App.trumpSuit;
+      const iconSvg = SVG_ICONS[card.suitId] || '';
+      const iconCenterSize = isBig ? 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14' : 'w-5 h-5 sm:w-7 sm:h-7';
+      const cornerIconSize = isBig ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-3 h-3 sm:w-3.5 sm:h-3.5';
+
+      return `
+        <div class="relative card-ratio rounded-2xl shadow-2xl flex flex-col justify-between p-1.5 sm:p-2 select-none bg-white ${widthClass}" style="color: ${card.suitColor}; border: 2.5px solid ${isTrump ? '#f59e0b' : '#cbd5e1'};">
+          <div class="flex justify-between items-center font-black leading-none">
+            <span class="font-extrabold">${card.short}</span>
+            <span class="${cornerIconSize}">${iconSvg}</span>
+          </div>
+          <div class="${iconCenterSize} mx-auto my-auto drop-shadow">
+            ${iconSvg}
+          </div>
+          <div class="flex justify-between items-center font-black leading-none rotate-180">
+            <span class="font-extrabold">${card.short}</span>
+            <span class="${cornerIconSize}">${iconSvg}</span>
+          </div>
+          ${isTrump ? '<div class="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 font-black rounded-full w-4 h-4 sm:w-5 sm:h-5 text-[9px] sm:text-[10px] flex items-center justify-center shadow">👑</div>' : ''}
+        </div>
+      `;
+    }
+
+    function showTrickToast(text) {
+      const toast = document.getElementById('trick-toast');
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.classList.add('hidden'); }, 1700);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        loadSavedProfiles();
+        selectUser('Jan');
+      } catch(e) {
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
